@@ -865,16 +865,31 @@ async function loadModCommenti() {
   document.getElementById('mod-list').innerHTML = html;
 }
 
-async function editCommento(tipo, id) {
+function editCommento(tipo, id) {
   const prefix = tipo === 'partita' ? 'cp' : 'cr';
   const testoEl = document.getElementById(prefix+'-testo-'+id);
   const testoAttuale = testoEl.textContent;
-  const nuovo = prompt('Modifica il commento:', testoAttuale);
-  if (nuovo === null || nuovo.trim() === '') return;
+  testoEl.innerHTML = `
+    <textarea id="${prefix}-edit-${id}" style="width:100%;padding:0.4rem;border:1.5px solid var(--verde);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;resize:vertical;min-height:70px;outline:none;">${testoAttuale}</textarea>
+    <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
+      <button class="btn-save" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="saveEditCommento('${tipo}','${id}')">Salva</button>
+      <button class="btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="cancelEditCommento('${tipo}','${id}','${testoAttuale.replace(/'/g,"\\'")}')">Annulla</button>
+    </div>`;
+}
+
+function cancelEditCommento(tipo, id, testo) {
+  const prefix = tipo === 'partita' ? 'cp' : 'cr';
+  document.getElementById(prefix+'-testo-'+id).innerHTML = testo;
+}
+
+async function saveEditCommento(tipo, id) {
+  const prefix = tipo === 'partita' ? 'cp' : 'cr';
+  const nuovo = document.getElementById(prefix+'-edit-'+id).value.trim();
+  if (!nuovo) return;
   const tabella = tipo === 'partita' ? 'commenti_partita' : 'commenti_ristorante';
-  const { error } = await sb.from(tabella).update({ testo: nuovo.trim() }).eq('id', id);
+  const { error } = await sb.from(tabella).update({ testo: nuovo }).eq('id', id);
   if (error) { toast('Errore: ' + error.message); return; }
-  testoEl.textContent = nuovo.trim();
+  document.getElementById(prefix+'-testo-'+id).innerHTML = nuovo;
   toast('Commento aggiornato.');
 }
 
