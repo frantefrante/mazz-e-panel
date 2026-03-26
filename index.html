@@ -304,7 +304,7 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="lbBgClose(event)">
-  <button class="lb-close" onclick="lbClose()">&times;</button>
+  <button class="lb-close" onclick="document.getElementById('lightbox').classList.remove('open')">&times;</button>
   <button class="lb-nav prev" onclick="lbNav(-1,event)">&#8249;</button>
   <img id="lb-img" src="" alt="">
   <button class="lb-nav next" onclick="lbNav(1,event)">&#8250;</button>
