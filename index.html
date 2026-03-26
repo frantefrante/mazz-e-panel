@@ -734,40 +734,81 @@ async function delCommentoRist(id) {
   loadModCommenti();
 }
 
-/* ——— FOTO ——— */
-function triggerUpload(id) { currentGallery = id; document.getElementById('file-input').value=''; document.getElementById('file-input').click(); }
-
-function handleFiles(e) {
-  const files = Array.from(e.target.files);
-  if (!files.length||!currentGallery) return;
-  if (!galleries[currentGallery]) galleries[currentGallery]=[];
-  files.forEach(f => {
-    const r = new FileReader();
-    r.onload = ev => { galleries[currentGallery].push({src:ev.target.result,name:f.name}); renderGallery(currentGallery); };
-    r.readAsDataURL(f);
-  });
+/* ——— FOTO (Supabase Storage) ——— */
+function triggerUpload(id) {
+  if (!currentUser || currentUser.ruolo !== 'admin') { toast('Solo l\'admin può caricare foto.'); return; }
+  currentGallery = id;
+  document.getElementById('file-input').value='';
+  document.getElementById('file-input').click();
 }
 
-function renderGallery(id) {
+async function handleFiles(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length || !currentGallery) return;
+  toast('Caricamento foto in corso...');
+  for (const f of files) {
+    const ext = f.name.split('.').pop();
+    const path = `${currentGallery}/${Date.now()}_${Math.random().toString(36).substr(2,6)}.${ext}`;
+    const { error } = await sb.storage.from('foto-serate').upload(path, f, { cacheControl: '3600', upsert: false });
+    if (error) { toast('Errore caricamento: ' + error.message); continue; }
+  }
+  toast('Foto caricate! 📸');
+  await renderGallery(currentGallery);
+}
+
+async function renderGallery(id) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
-  const items = galleries[id]||[];
-  let html = items.map((item,idx) => `
-    <div class="foto-item" onclick="openLb('${id}',${idx})">
-      <img src="${item.src}" alt="${item.name}">
-      <button class="foto-del" onclick="delFoto(event,'${id}',${idx})">✕</button>
-    </div>`).join('');
-  html += `<button class="foto-add" onclick="triggerUpload('${id}')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 5l1.5-2.5h5L16 5"/></svg>
-    Aggiungi</button>`;
-  grid.innerHTML = html;
+  const { data: files } = await sb.storage.from('foto-serate').list(id, { sortBy: { column: 'created_at', order: 'asc' } });
+  const items = files || [];
+  let html = items.map((f, idx) => {
+    const url = sb.storage.from('foto-serate').getPublicUrl(`${id}/${f.name}`).data.publicUrl;
+    return `<div class="foto-item" onclick="openLbUrl('${url}','${id}',${idx})">
+      <img src="${url}" alt="${f.name}">
+      ${currentUser && currentUser.ruolo==='admin' ? `<button class="foto-del" onclick="delFotoStorage(event,'${id}','${f.name}')">✕</button>` : ''}
+    </div>`;
+  }).join('');
+  if (currentUser && currentUser.ruolo === 'admin') {
+    html += `<button class="foto-add" onclick="triggerUpload('${id}')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 5l1.5-2.5h5L16 5"/></svg>
+      Aggiungi</button>`;
+  }
+  grid.innerHTML = html || '<p style="color:var(--gray);font-size:0.85rem;padding:0.5rem">Nessuna foto ancora.</p>';
 }
 
-function delFoto(e,id,idx) { e.stopPropagation(); galleries[id].splice(idx,1); renderGallery(id); }
-function openLb(id,idx) { lbImages=galleries[id]||[]; lbIdx=idx; document.getElementById('lb-img').src=lbImages[lbIdx].src; document.getElementById('lightbox').classList.add('open'); }
-function lbClose() { document.getElementById('lightbox').classList.remove('open'); }
+async function delFotoStorage(e, serataId, fileName) {
+  e.stopPropagation();
+  if (!confirm('Eliminare questa foto?')) return;
+  await sb.storage.from('foto-serate').remove([`${serataId}/${fileName}`]);
+  toast('Foto eliminata.');
+  renderGallery(serataId);
+}
+
+function delFoto(e,id,idx) { e.stopPropagation(); }
+
+let lbUrls = [];
+function openLbUrl(url, id, idx) {
+  const grid = document.getElementById('fg-'+id);
+  lbUrls = Array.from(grid.querySelectorAll('.foto-item img')).map(img => img.src);
+  lbIdx = idx;
+  document.getElementById('lb-img').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function openLb(id,idx) {
+  const grid = document.getElementById('fg-'+id);
+  if (!grid) return;
+  lbUrls = Array.from(grid.querySelectorAll('.foto-item img')).map(img => img.src);
+  lbIdx = idx;
+  document.getElementById('lb-img').src = lbUrls[lbIdx];
+  document.getElementById('lightbox').classList.add('open');
+}
 function lbBgClose(e) { if(e.target===document.getElementById('lightbox')) lbClose(); }
-function lbNav(dir,e) { e.stopPropagation(); lbIdx=(lbIdx+dir+lbImages.length)%lbImages.length; document.getElementById('lb-img').src=lbImages[lbIdx].src; }
+function lbNav(dir,e) {
+  e.stopPropagation();
+  lbIdx=(lbIdx+dir+lbUrls.length)%lbUrls.length;
+  document.getElementById('lb-img').src=lbUrls[lbIdx];
+}
 document.addEventListener('keydown',e=>{ const lb=document.getElementById('lightbox'); if(!lb.classList.contains('open'))return; if(e.key==='Escape')lbClose(); if(e.key==='ArrowRight')lbNav(1,{stopPropagation:()=>{}}); if(e.key==='ArrowLeft')lbNav(-1,{stopPropagation:()=>{}}); });
 
 /* ——— UTILS ——— */
