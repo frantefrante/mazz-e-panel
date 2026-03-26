@@ -668,8 +668,163 @@ async function loadGestioneSerate() {
   document.getElementById('gest-list').innerHTML = data.map(s => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid var(--gray-light)">
       <div><strong>${formatData(s.data)}</strong> ${s.titolo?`<span style="color:var(--gray);font-size:0.85rem">— ${s.titolo}</span>`:''}</div>
-      <button class="btn-danger" onclick="deleteSerata('${s.id}')">Elimina</button>
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn-save" style="padding:0.4rem 1rem;font-size:0.8rem" onclick="editSerata('${s.id}')">✏️ Modifica</button>
+        <button class="btn-danger" onclick="deleteSerata('${s.id}')">Elimina</button>
+      </div>
     </div>`).join('');
+}
+
+async function editSerata(serataId) {
+  const el = document.getElementById('admin-section');
+  el.innerHTML = '<div class="form-section"><h3>⏳ Caricamento...</h3></div>';
+
+  const { data: s } = await sb.from('serate').select('*').eq('id', serataId).single();
+  const { data: partite } = await sb.from('partite').select('*').eq('serata_id', serataId);
+  const { data: rlist } = await sb.from('ristoranti').select('*').eq('serata_id', serataId);
+  const { data: cp } = await sb.from('commenti_partita').select('*, giocatori(nome)').eq('serata_id', serataId).order('created_at');
+  const p = partite && partite[0];
+  const r = rlist && rlist[0];
+  const { data: vals } = r ? await sb.from('valutazioni').select('*, giocatori(nome)').eq('ristorante_id', r.id) : { data: [] };
+  const { data: cr } = r ? await sb.from('commenti_ristorante').select('*, giocatori(nome)').eq('ristorante_id', r.id).order('created_at') : { data: [] };
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+      <button class="btn-secondary" onclick="loadGestioneSerate()">← Torna all'elenco</button>
+      <h3 style="font-family:'Playfair Display',serif;color:var(--verde);font-size:1.3rem">${formatData(s.data)}</h3>
+    </div>
+
+    <!-- SERATA -->
+    <div class="form-section">
+      <h3>📅 Serata</h3>
+      <div class="form-row">
+        <div class="form-field"><label>Data</label><input type="date" id="es-data" value="${s.data}"/></div>
+        <div class="form-field"><label>Titolo</label><input type="text" id="es-titolo" value="${s.titolo||''}"/></div>
+      </div>
+      <button class="btn-save" onclick="updateSerata('${s.id}')">Salva</button>
+      <div id="msg-serata"></div>
+    </div>
+
+    <!-- PARTITA -->
+    <div class="form-section">
+      <h3>🏓 Partita</h3>
+      <div class="form-row">
+        <div class="form-field"><label>Squadra 1</label><input type="text" id="ep-s1" value="${p?.squadra1_nomi||''}"/></div>
+        <div class="form-field"><label>Squadra 2</label><input type="text" id="ep-s2" value="${p?.squadra2_nomi||''}"/></div>
+      </div>
+      <div class="form-field"><label>Set (es. 6-3|4-6|6-4)</label><input type="text" id="ep-sets" value="${p?.set_dettaglio||''}"/></div>
+      <button class="btn-save" onclick="updatePartita('${serataId}','${p?.id||''}')">Salva</button>
+      <div id="msg-partita"></div>
+    </div>
+
+    <!-- COMMENTI PARTITA -->
+    <div class="form-section">
+      <h3>💬 Commenti partita</h3>
+      <div id="list-cp">
+        ${cp && cp.length ? cp.map(c => `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
+            <div><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome}</span><br>${c.testo}</div>
+            <button class="btn-danger" onclick="delCommentoPartita('${c.id}');this.closest('div').remove()">Elimina</button>
+          </div>`).join('') : '<p style="color:var(--gray);font-size:0.85rem">Nessun commento.</p>'}
+      </div>
+    </div>
+
+    <!-- RISTORANTE -->
+    <div class="form-section">
+      <h3>🍽️ Ristorante</h3>
+      <div class="form-row">
+        <div class="form-field"><label>Nome</label><input type="text" id="er-nome" value="${r?.nome||''}"/></div>
+        <div class="form-field"><label>Luogo</label><input type="text" id="er-luogo" value="${r?.luogo||''}"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Prezzo a persona (€)</label><input type="number" id="er-prezzo" value="${r?.prezzo_persona||''}"/></div>
+      </div>
+      <div class="form-field"><label>Antipasto</label><input type="text" id="er-ant" value="${r?.menu_antipasto||''}"/></div>
+      <div class="form-field"><label>Primo</label><input type="text" id="er-pri" value="${r?.menu_primo||''}"/></div>
+      <div class="form-field"><label>Secondo</label><input type="text" id="er-sec" value="${r?.menu_secondo||''}"/></div>
+      <div class="form-field"><label>Altro</label><input type="text" id="er-alt" value="${r?.menu_altro||''}"/></div>
+      <button class="btn-save" onclick="updateRistorante('${serataId}','${r?.id||''}')">Salva</button>
+      <div id="msg-rist"></div>
+    </div>
+
+    <!-- VALUTAZIONI -->
+    <div class="form-section">
+      <h3>🏓 Valutazioni giocatori</h3>
+      <div id="list-vals">
+        ${vals && vals.length ? vals.map(v => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--gray-light)">
+            <div>
+              <strong>${v.giocatori?.nome}</strong>
+              <span style="font-size:0.82rem;color:var(--gray);margin-left:0.5rem">
+                Location: ${v.location||'–'} · Cibo: ${v.cibo||'–'} · Prezzo: ${v.prezzo||'–'} · Servizio: ${v.servizio||'–'}
+              </span>
+              ${v.note_cibo ? `<div style="font-size:0.82rem;font-style:italic;color:var(--gray);margin-top:0.2rem">"${v.note_cibo}"</div>` : ''}
+            </div>
+            <button class="btn-danger" onclick="delValutazione('${v.id}');this.closest('div').remove()">Elimina</button>
+          </div>`).join('') : '<p style="color:var(--gray);font-size:0.85rem">Nessuna valutazione ancora.</p>'}
+      </div>
+    </div>
+
+    <!-- COMMENTI RISTORANTE -->
+    <div class="form-section">
+      <h3>💬 Commenti ristorante</h3>
+      <div id="list-cr">
+        ${cr && cr.length ? cr.map(c => `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
+            <div><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome}</span><br>${c.testo}</div>
+            <button class="btn-danger" onclick="delCommentoRist('${c.id}');this.closest('div').remove()">Elimina</button>
+          </div>`).join('') : '<p style="color:var(--gray);font-size:0.85rem">Nessun commento.</p>'}
+      </div>
+    </div>
+  `;
+}
+
+async function updateSerata(id) {
+  const data = document.getElementById('es-data').value;
+  const titolo = document.getElementById('es-titolo').value;
+  const { error } = await sb.from('serate').update({ data, titolo }).eq('id', id);
+  showMsg('msg-serata', error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
+}
+
+async function updatePartita(serataId, partitaId) {
+  const s1 = document.getElementById('ep-s1').value.trim();
+  const s2 = document.getElementById('ep-s2').value.trim();
+  const sets = document.getElementById('ep-sets').value.trim();
+  let ps1=0, ps2=0;
+  if (sets) sets.split('|').forEach(st => { const [a,b]=st.split('-').map(Number); if(!isNaN(a)&&!isNaN(b)){if(a>b)ps1++;else ps2++;} });
+  const payload = { serata_id: serataId, squadra1_nomi: s1, squadra2_nomi: s2, punteggio_s1: String(ps1), punteggio_s2: String(ps2), set_dettaglio: sets };
+  let error;
+  if (partitaId) {
+    ({ error } = await sb.from('partite').update(payload).eq('id', partitaId));
+  } else {
+    ({ error } = await sb.from('partite').insert(payload));
+  }
+  showMsg('msg-partita', error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
+}
+
+async function updateRistorante(serataId, ristId) {
+  const payload = {
+    serata_id: serataId,
+    nome: document.getElementById('er-nome').value,
+    luogo: document.getElementById('er-luogo').value,
+    prezzo_persona: parseFloat(document.getElementById('er-prezzo').value)||null,
+    menu_antipasto: document.getElementById('er-ant').value,
+    menu_primo: document.getElementById('er-pri').value,
+    menu_secondo: document.getElementById('er-sec').value,
+    menu_altro: document.getElementById('er-alt').value
+  };
+  let error;
+  if (ristId) {
+    ({ error } = await sb.from('ristoranti').update(payload).eq('id', ristId));
+  } else {
+    ({ error } = await sb.from('ristoranti').insert(payload));
+  }
+  showMsg('msg-rist', error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
+}
+
+async function delValutazione(id) {
+  await sb.from('valutazioni').delete().eq('id', id);
+  toast('Valutazione eliminata.');
 }
 
 async function deleteSerata(id) {
