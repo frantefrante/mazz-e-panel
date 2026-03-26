@@ -226,7 +226,7 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
     <circle cx="55" cy="55" r="3.5" fill="#c8951a"/>
   </svg>
 
-  <div class="site-title">Mazz <span>&</span> Panell</div>
+  <div class="site-title">Mazz <span>&</span> Panell ✅</div>
   <div class="site-subtitle">Fann i figl bell</div>
   <div class="pronounce">[ ˈfannə ɪ ˈfiʎʎ bɛll ]</div>
   <div class="dialect-note">in dialetto grassanese: "mazzate e pagnotte traghettano i figli verso la luce"</div>
@@ -505,7 +505,6 @@ async function loadRistoranti() {
   }
   if (!html) html = '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nessuna cena ancora</div></div>';
   el.innerHTML = html;
-  document.querySelectorAll('[data-score]').forEach(setupStars);
 }
 
 function valCard(label, score) {
@@ -532,15 +531,16 @@ function setStars(id, val) {
 async function saveValutazione(ristId, serataId) {
   if (!currentUser) return;
   const get = id => { const el = document.getElementById(id); return el ? parseInt(el.dataset.score)||null : null; };
-  const note = document.getElementById('vi-note-'+ristId)?.value || '';
+  const nota = document.getElementById('vi-note-'+ristId)?.value?.trim() || '';
+
+  // Salva i voti numerici nella tabella valutazioni
   const payload = {
     ristorante_id: ristId,
     giocatore_id: currentUser.id,
     location: get('vi-loc-'+ristId),
     cibo:     get('vi-cib-'+ristId),
     prezzo:   get('vi-pre-'+ristId),
-    servizio: get('vi-ser-'+ristId),
-    note_cibo: note
+    servizio: get('vi-ser-'+ristId)
   };
   const { data: existing } = await sb.from('valutazioni').select('id').eq('ristorante_id', ristId).eq('giocatore_id', currentUser.id);
   if (existing && existing.length) {
@@ -548,6 +548,17 @@ async function saveValutazione(ristId, serataId) {
   } else {
     await sb.from('valutazioni').insert(payload);
   }
+
+  // Salva il commento testuale separatamente in commenti_ristorante
+  if (nota) {
+    const { data: existingC } = await sb.from('commenti_ristorante').select('id').eq('ristorante_id', ristId).eq('giocatore_id', currentUser.id);
+    if (existingC && existingC.length) {
+      await sb.from('commenti_ristorante').update({ testo: nota }).eq('id', existingC[0].id);
+    } else {
+      await sb.from('commenti_ristorante').insert({ ristorante_id: ristId, giocatore_id: currentUser.id, testo: nota });
+    }
+  }
+
   toast('Valutazione salvata! 🏓');
   loadRistoranti();
 }
