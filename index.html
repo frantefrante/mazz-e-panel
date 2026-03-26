@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <title>Mazz e Panell</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
@@ -766,24 +767,13 @@ async function handleFiles(e) {
   await renderGallery(currentGallery);
 }
 
-function convertToJpeg(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      canvas.toBlob(blob => {
-        URL.revokeObjectURL(url);
-        if (blob) resolve(new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
-        else reject(new Error('Conversione fallita'));
-      }, 'image/jpeg', 0.92);
-    };
-    img.onerror = () => reject(new Error('Immagine non leggibile'));
-    img.src = url;
-  });
+async function convertToJpeg(file) {
+  try {
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+  } catch(err) {
+    throw new Error('Conversione HEIC fallita: ' + err.message);
+  }
 }
 async function renderGallery(id) {
   const grid = document.getElementById('fg-'+id);
