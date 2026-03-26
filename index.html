@@ -702,9 +702,12 @@ async function editSerata(serataId) {
       <h3>💬 Commenti partita</h3>
       <div id="list-cp">
         ${cp && cp.length ? cp.map(c => `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
-            <div><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome}</span><br>${c.testo}</div>
-            <button class="btn-danger" onclick="delCommentoPartita('${c.id}');this.closest('div').remove()">Elimina</button>
+          <div id="cp-${c.id}" style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
+            <div style="flex:1"><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome}</span><br><span id="cp-testo-${c.id}">${c.testo}</span></div>
+            <div style="display:flex;gap:0.4rem;flex-shrink:0">
+              <button class="btn-save" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="editCommento('partita','${c.id}')">Modifica</button>
+              <button class="btn-danger" onclick="delCommentoPartita('${c.id}');document.getElementById('cp-${c.id}').remove()">Elimina</button>
+            </div>
           </div>`).join('') : '<p style="color:var(--gray);font-size:0.85rem">Nessun commento.</p>'}
       </div>
     </div>
@@ -750,9 +753,12 @@ async function editSerata(serataId) {
       <h3>💬 Commenti ristorante</h3>
       <div id="list-cr">
         ${cr && cr.length ? cr.map(c => `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
-            <div><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome}</span><br>${c.testo}</div>
-            <button class="btn-danger" onclick="delCommentoRist('${c.id}');this.closest('div').remove()">Elimina</button>
+          <div id="cr-${c.id}" style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
+            <div style="flex:1"><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome}</span><br><span id="cr-testo-${c.id}">${c.testo}</span></div>
+            <div style="display:flex;gap:0.4rem;flex-shrink:0">
+              <button class="btn-save" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="editCommento('ristorante','${c.id}')">Modifica</button>
+              <button class="btn-danger" onclick="delCommentoRist('${c.id}');document.getElementById('cr-${c.id}').remove()">Elimina</button>
+            </div>
           </div>`).join('') : '<p style="color:var(--gray);font-size:0.85rem">Nessun commento.</p>'}
       </div>
     </div>
@@ -857,6 +863,19 @@ async function loadModCommenti() {
   }
   if (!html) html = '<p style="color:var(--gray)">Nessun commento.</p>';
   document.getElementById('mod-list').innerHTML = html;
+}
+
+async function editCommento(tipo, id) {
+  const prefix = tipo === 'partita' ? 'cp' : 'cr';
+  const testoEl = document.getElementById(prefix+'-testo-'+id);
+  const testoAttuale = testoEl.textContent;
+  const nuovo = prompt('Modifica il commento:', testoAttuale);
+  if (nuovo === null || nuovo.trim() === '') return;
+  const tabella = tipo === 'partita' ? 'commenti_partita' : 'commenti_ristorante';
+  const { error } = await sb.from(tabella).update({ testo: nuovo.trim() }).eq('id', id);
+  if (error) { toast('Errore: ' + error.message); return; }
+  testoEl.textContent = nuovo.trim();
+  toast('Commento aggiornato.');
 }
 
 async function delCommentoPartita(id) {
