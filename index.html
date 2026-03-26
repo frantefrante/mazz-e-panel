@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mazz e Panell</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --verde:#2a5c3f;--verde-pale:#e8f4ee;--gold:#c8951a;--gold-light:#f0c840;
+  --cream:#faf7f0;--dark:#1a1a1a;--gray:#6b6b6b;--gray-light:#e8e6e0;
+  --red:#c0392b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--dark);min-height:100vh;}
+
+/* ——— HEADER ——— */
+header{background:var(--verde);padding:2rem 1.5rem 1.5rem;text-align:center;position:relative;overflow:hidden;}
+header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(255,255,255,0.03) 40px,rgba(255,255,255,0.03) 41px);}
+.logo-svg{width:90px;height:90px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.45));margin-bottom:0.8rem;}
+.site-title{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:#fff;letter-spacing:-1px;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,0.3);}
+.site-title span{color:var(--gold-light);}
+.site-subtitle{font-family:'Oswald',sans-serif;font-size:1rem;font-weight:500;color:rgba(255,255,255,0.8);letter-spacing:3px;text-transform:uppercase;margin-top:0.4rem;}
+.pronounce{font-size:0.82rem;font-weight:300;color:var(--gold-light);font-style:italic;margin-top:0.2rem;}
+.dialect-note{font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:0.3rem;font-style:italic;}
+
+/* ——— NAV ——— */
+.nav-bar{display:flex;justify-content:center;align-items:center;gap:0;margin-top:1.4rem;flex-wrap:wrap;gap:4px;}
+.nav-btn{background:transparent;border:1.5px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.75);font-family:'Oswald',sans-serif;font-size:0.8rem;letter-spacing:2px;padding:0.5rem 1.3rem;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.nav-btn:first-child{border-radius:4px 0 0 4px;}
+.nav-btn.last-main{border-radius:0 4px 4px 0;}
+.nav-btn.active,.nav-btn:hover{background:var(--gold);border-color:var(--gold);color:#fff;}
+.nav-sep{width:12px;}
+.nav-btn.login-btn{border-radius:4px;border-color:rgba(255,255,255,0.5);}
+.nav-btn.logout-btn{border-radius:4px;background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.3);}
+.user-chip{font-family:'Oswald',sans-serif;font-size:0.78rem;letter-spacing:1px;color:var(--gold-light);padding:0.5rem 0.8rem;text-transform:uppercase;}
+
+/* ——— MAIN ——— */
+main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ——— SECTION HEADER ——— */
+.sec-head{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid var(--verde);}
+.sec-title{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:var(--verde);}
+
+/* ——— CARD ——— */
+.card{background:#fff;border-radius:12px;border:1px solid var(--gray-light);overflow:hidden;margin-bottom:2rem;box-shadow:0 2px 12px rgba(0,0,0,0.06);}
+.card-hd{background:var(--verde);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;}
+.card-hd-dark{background:#1a1a1a;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;}
+.card-body{padding:1.5rem;}
+.card-date{font-family:'Oswald',sans-serif;font-size:0.78rem;letter-spacing:2px;color:rgba(255,255,255,0.6);text-transform:uppercase;}
+.card-badge{background:var(--gold);color:#fff;font-family:'Oswald',sans-serif;font-size:0.72rem;letter-spacing:1.5px;padding:0.18rem 0.65rem;border-radius:20px;text-transform:uppercase;}
+.card-name{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:#fff;}
+.card-sub{font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:0.1rem;}
+.price-tag{background:var(--gold);color:#fff;font-family:'Oswald',sans-serif;font-size:0.95rem;font-weight:700;padding:0.35rem 0.85rem;border-radius:6px;white-space:nowrap;}
+
+/* ——— MATCH ——— */
+.match-grid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1rem;margin-bottom:1.2rem;}
+.team{display:flex;flex-direction:column;gap:0.25rem;}
+.team.r{text-align:right;}
+.team-name{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--verde);}
+.ptag{display:inline-block;background:var(--verde-pale);color:var(--verde);font-size:0.78rem;font-weight:500;padding:0.15rem 0.55rem;border-radius:4px;margin-top:0.15rem;}
+.team.r .ptag{margin-left:auto;}
+.score-box{text-align:center;}
+.score{font-family:'Oswald',sans-serif;font-size:2.5rem;font-weight:700;color:var(--dark);line-height:1;}
+.score-lbl{font-size:0.68rem;color:var(--gray);letter-spacing:1.5px;text-transform:uppercase;}
+.sets{display:flex;gap:0.4rem;justify-content:center;margin-bottom:1.2rem;flex-wrap:wrap;}
+.set-chip{background:var(--gray-light);border-radius:6px;padding:0.3rem 0.65rem;font-family:'Oswald',sans-serif;font-size:0.85rem;font-weight:500;}
+.set-chip.won{background:var(--verde-pale);color:var(--verde);}
+
+/* ——— COMMENTI ——— */
+.lbl{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--gray);font-weight:600;margin-bottom:0.45rem;}
+.commento{font-size:0.92rem;line-height:1.7;color:#333;border-left:3px solid var(--gold);padding-left:1rem;font-style:italic;margin-bottom:0.8rem;}
+.commento-author{font-size:0.75rem;color:var(--gray);margin-top:0.3rem;font-style:normal;}
+.divider{height:1px;background:var(--gray-light);margin:1.1rem 0;}
+
+/* ——— MENU PILLS ——— */
+.menu-cat{font-size:0.7rem;letter-spacing:2.5px;text-transform:uppercase;font-weight:600;color:var(--verde);margin-bottom:0.35rem;margin-top:0.9rem;}
+.pills{display:flex;flex-wrap:wrap;gap:0.35rem;}
+.pill{background:var(--cream);border:1px solid var(--gray-light);border-radius:20px;font-size:0.82rem;padding:0.22rem 0.7rem;color:#333;}
+
+/* ——— VALUTAZIONI ——— */
+.val-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;margin-top:1.2rem;}
+.val-card{background:var(--cream);border-radius:8px;padding:0.9rem;border:1px solid var(--gray-light);}
+.val-lbl{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:var(--gray);margin-bottom:0.4rem;}
+.val-score{font-family:'Oswald',sans-serif;font-size:1.3rem;font-weight:700;color:var(--verde);}
+.pale-row{display:flex;gap:2px;flex-wrap:wrap;margin:0.3rem 0;}
+.pala-svg{width:16px;height:20px;}
+.val-note{font-size:0.78rem;color:var(--gray);font-style:italic;line-height:1.5;}
+
+/* ——— FOTO ——— */
+.foto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:7px;margin-top:0.8rem;}
+.foto-item{position:relative;aspect-ratio:1;border-radius:7px;overflow:hidden;background:var(--gray-light);cursor:pointer;}
+.foto-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s;display:block;}
+.foto-item:hover img{transform:scale(1.06);}
+.foto-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.65);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+.foto-item:hover .foto-del{display:flex;}
+.foto-add{aspect-ratio:1;border-radius:7px;border:2px dashed var(--gray-light);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all 0.2s;color:var(--gray);font-size:0.72rem;font-family:'DM Sans',sans-serif;}
+.foto-add:hover{border-color:var(--verde);color:var(--verde);background:var(--verde-pale);}
+
+/* ——— LOGIN ——— */
+.login-wrap{max-width:380px;margin:4rem auto;background:#fff;border-radius:16px;border:1px solid var(--gray-light);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.login-head{background:var(--verde);padding:2rem 1.5rem;text-align:center;}
+.login-head .site-title{font-size:2rem;}
+.login-body{padding:2rem 1.5rem;}
+.login-body h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:1.5rem;color:var(--verde);}
+.field{margin-bottom:1.1rem;}
+.field label{display:block;font-size:0.78rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-bottom:0.4rem;}
+.field input{width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;transition:border 0.2s;}
+.field input:focus{border-color:var(--verde);}
+.btn-primary{width:100%;padding:0.75rem;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Oswald',sans-serif;font-size:1rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background 0.2s;}
+.btn-primary:hover{background:#1e4a2e;}
+.login-err{color:var(--red);font-size:0.85rem;margin-top:0.8rem;text-align:center;}
+
+/* ——— ADMIN ——— */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;}
+@media(max-width:580px){.admin-grid{grid-template-columns:1fr;}}
+.admin-card{background:#fff;border-radius:10px;border:1px solid var(--gray-light);padding:1.3rem;cursor:pointer;transition:all 0.2s;box-shadow:0 1px 6px rgba(0,0,0,0.05);}
+.admin-card:hover{border-color:var(--verde);box-shadow:0 4px 16px rgba(42,92,63,0.12);}
+.admin-card-icon{font-size:2rem;margin-bottom:0.6rem;}
+.admin-card-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--verde);}
+.admin-card-sub{font-size:0.82rem;color:var(--gray);margin-top:0.2rem;}
+
+/* ——— FORM SERATA ——— */
+.form-section{background:#fff;border-radius:12px;border:1px solid var(--gray-light);padding:1.5rem;margin-bottom:1.5rem;}
+.form-section h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--verde);margin-bottom:1.2rem;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:520px){.form-row{grid-template-columns:1fr;}}
+.form-field{margin-bottom:1rem;}
+.form-field label{display:block;font-size:0.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-bottom:0.35rem;}
+.form-field input,.form-field textarea,.form-field select{width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:border 0.2s;background:#fff;}
+.form-field input:focus,.form-field textarea:focus{border-color:var(--verde);}
+.form-field textarea{resize:vertical;min-height:80px;}
+.btn-save{padding:0.7rem 2rem;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Oswald',sans-serif;font-size:0.9rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background 0.2s;}
+.btn-save:hover{background:#1e4a2e;}
+.btn-secondary{padding:0.7rem 1.5rem;background:transparent;color:var(--verde);border:1.5px solid var(--verde);border-radius:8px;font-family:'Oswald',sans-serif;font-size:0.9rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-right:0.8rem;}
+.btn-danger{padding:0.5rem 1rem;background:transparent;color:var(--red);border:1.5px solid var(--red);border-radius:6px;font-size:0.8rem;cursor:pointer;}
+.success-msg{color:var(--verde);font-size:0.85rem;margin-top:0.8rem;font-weight:500;}
+.err-msg{color:var(--red);font-size:0.85rem;margin-top:0.8rem;}
+
+/* ——— SCORE INPUT ——— */
+.score-input-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
+.score-input-row span{font-family:'Oswald',sans-serif;font-size:1.1rem;color:var(--gray);}
+.score-input-row input{width:70px;text-align:center;}
+
+/* ——— VALUTAZIONE INPUT ——— */
+.val-input-row{display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;}
+.val-input-row label{min-width:80px;font-size:0.78rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray);}
+.star-row{display:flex;gap:4px;}
+.star-btn{background:none;border:none;cursor:pointer;padding:2px;font-size:1.1rem;opacity:0.25;transition:opacity 0.15s;}
+.star-btn.on{opacity:1;}
+
+/* ——— COMMENTO FORM ——— */
+.commento-form{margin-top:1rem;background:var(--verde-pale);border-radius:8px;padding:1rem;}
+.commento-form textarea{width:100%;padding:0.6rem;border:1.5px solid var(--gray-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;resize:vertical;min-height:70px;outline:none;}
+.commento-form textarea:focus{border-color:var(--verde);}
+
+/* ——— EMPTY ——— */
+.empty{text-align:center;padding:3rem;color:var(--gray);}
+.empty-icon{font-size:2.8rem;margin-bottom:1rem;opacity:0.3;}
+.empty-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gray);}
+.empty-sub{font-size:0.82rem;margin-top:0.3rem;}
+
+/* ——— LIGHTBOX ——— */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:1000;align-items:center;justify-content:center;padding:1rem;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;}
+.lb-close{position:fixed;top:1rem;right:1.2rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;opacity:0.7;}
+.lb-close:hover{opacity:1;}
+.lb-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:none;color:#fff;font-size:2rem;padding:0.4rem 0.85rem;cursor:pointer;border-radius:4px;}
+.lb-nav:hover{background:rgba(255,255,255,0.25);}
+.lb-nav.prev{left:1rem;}
+.lb-nav.next{right:1rem;}
+
+/* ——— TOAST ——— */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:0.8rem 1.5rem;border-radius:8px;font-size:0.9rem;z-index:2000;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+.toast.show{opacity:1;}
+
+@media(max-width:520px){
+  .match-grid{grid-template-columns:1fr;text-align:center;}
+  .team.r{text-align:center;}
+  .team.r .ptag{margin-left:0;}
+  .val-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <!-- LOGO X -->
+  <svg class="logo-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+    <g transform="rotate(45,55,55)">
+      <rect x="8" y="51" width="94" height="9" rx="4.5" fill="#c49040"/>
+      <rect x="10" y="51" width="90" height="3.5" rx="2" fill="#edcc7a" opacity="0.6"/>
+      <ellipse cx="8" cy="55.5" rx="4.5" ry="4.5" fill="#a07020"/>
+      <ellipse cx="102" cy="55.5" rx="4.5" ry="4.5" fill="#a07020"/>
+      <line x1="25" y1="51" x2="29" y2="60" stroke="#8a5a10" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+      <line x1="42" y1="51" x2="46" y2="60" stroke="#8a5a10" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+      <line x1="59" y1="51" x2="63" y2="60" stroke="#8a5a10" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+      <line x1="76" y1="51" x2="80" y2="60" stroke="#8a5a10" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="rotate(-45,55,55)">
+      <rect x="50" y="68" width="10" height="30" rx="4" fill="#d0c4a8"/>
+      <rect x="50" y="76" width="10" height="20" rx="3" fill="#2e1a0e"/>
+      <line x1="50" y1="80" x2="60" y2="80" stroke="#4a2a14" stroke-width="1.1"/>
+      <line x1="50" y1="84" x2="60" y2="84" stroke="#4a2a14" stroke-width="1.1"/>
+      <line x1="50" y1="88" x2="60" y2="88" stroke="#4a2a14" stroke-width="1.1"/>
+      <rect x="50" y="64" width="10" height="6" rx="2" fill="#b8a880"/>
+      <ellipse cx="55" cy="40" rx="17" ry="21" fill="#2a5c3f"/>
+      <ellipse cx="55" cy="40" rx="17" ry="21" fill="none" stroke="#c8951a" stroke-width="2"/>
+      <circle cx="49" cy="33" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="55" cy="33" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="61" cy="33" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="49" cy="40" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="55" cy="40" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="61" cy="40" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="49" cy="47" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="55" cy="47" r="2" fill="rgba(255,255,255,0.22)"/>
+      <circle cx="61" cy="47" r="2" fill="rgba(255,255,255,0.22)"/>
+    </g>
+    <circle cx="55" cy="55" r="8" fill="#1e4a2e"/>
+    <circle cx="55" cy="55" r="8" fill="none" stroke="#c8951a" stroke-width="1.8"/>
+    <circle cx="55" cy="55" r="3.5" fill="#c8951a"/>
+  </svg>
+
+  <div class="site-title">Mazz <span>&</span> Panell</div>
+  <div class="site-subtitle">Fann i figl bell</div>
+  <div class="pronounce">[ ˈfannə ɪ ˈfiʎʎ bɛll ]</div>
+  <div class="dialect-note">in dialetto grassanese: "mazzate e pagnotte traghettano i figli verso la luce"</div>
+
+  <div class="nav-bar">
+    <button class="nav-btn active" onclick="showView('partite',this)">⚡ Partite</button>
+    <button class="nav-btn last-main" onclick="showView('dopocena',this)">🍽️ Dopo partita</button>
+    <div class="nav-sep"></div>
+    <div id="nav-auth"></div>
+  </div>
+</header>
+
+<main>
+  <!-- ===== VISTA PARTITE ===== -->
+  <div class="view active" id="view-partite">
+    <div class="sec-head">
+      <div class="sec-title">Le Partite</div>
+    </div>
+    <div id="list-partite"><div class="empty"><div class="empty-icon">🏸</div><div class="empty-title">Nessuna serata ancora</div><div class="empty-sub">L'admin inserirà le partite dopo ogni serata</div></div></div>
+  </div>
+
+  <!-- ===== VISTA DOPO PARTITA ===== -->
+  <div class="view" id="view-dopocena">
+    <div class="sec-head">
+      <div class="sec-title">Dopo Partita</div>
+    </div>
+    <div id="list-ristoranti"><div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nessuna cena ancora</div><div class="empty-sub">L'admin inserirà i ristoranti dopo ogni serata</div></div></div>
+  </div>
+
+  <!-- ===== LOGIN ===== -->
+  <div class="view" id="view-login">
+    <div class="login-wrap">
+      <div class="login-head">
+        <div class="site-title" style="font-size:1.8rem">Mazz <span>&</span> Panell</div>
+        <div class="site-subtitle" style="font-size:0.85rem;margin-top:0.4rem">Accesso giocatori</div>
+      </div>
+      <div class="login-body">
+        <h2>Bentornato in campo 🏓</h2>
+        <div class="field"><label>Username</label><input type="text" id="inp-user" placeholder="es. fra" autocomplete="username"/></div>
+        <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"/></div>
+        <button class="btn-primary" onclick="doLogin()">Entra</button>
+        <div class="login-err" id="login-err"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN ===== -->
+  <div class="view" id="view-admin">
+    <div class="sec-head"><div class="sec-title">Pannello Admin</div></div>
+    <div class="admin-grid">
+      <div class="admin-card" onclick="showAdminSection('nuova-serata')">
+        <div class="admin-card-icon">📅</div>
+        <div class="admin-card-title">Nuova serata</div>
+        <div class="admin-card-sub">Crea partita, squadre, risultato e ristorante</div>
+      </div>
+      <div class="admin-card" onclick="showAdminSection('gestione-serate')">
+        <div class="admin-card-icon">📋</div>
+        <div class="admin-card-title">Gestisci serate</div>
+        <div class="admin-card-sub">Modifica o elimina serate esistenti</div>
+      </div>
+      <div class="admin-card" onclick="showAdminSection('giocatori')">
+        <div class="admin-card-icon">👥</div>
+        <div class="admin-card-title">Giocatori</div>
+        <div class="admin-card-sub">Cambia password degli utenti</div>
+      </div>
+      <div class="admin-card" onclick="showAdminSection('commenti')">
+        <div class="admin-card-icon">💬</div>
+        <div class="admin-card-title">Commenti</div>
+        <div class="admin-card-sub">Modera i commenti del gruppo</div>
+      </div>
+    </div>
+    <div id="admin-section"></div>
+  </div>
+</main>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="lbBgClose(event)">
+  <button class="lb-close" onclick="lbClose()">&times;</button>
+  <button class="lb-nav prev" onclick="lbNav(-1,event)">&#8249;</button>
+  <img id="lb-img" src="" alt="">
+  <button class="lb-nav next" onclick="lbNav(1,event)">&#8250;</button>
+</div>
+<input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFiles(event)">
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://mogoinynipdxsxospkos.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vZ29pbnluaXBkeHN4b3Nwa29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MTYwODIsImV4cCI6MjA5MDA5MjA4Mn0.9DhcQkJLIJrEGKNDH2HfLjnetws-FqP9tI2fgin3cq4';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let currentUser = null;
+let currentView = 'partite';
+let galleries = {};
+let lbImages = [], lbIdx = 0;
+let currentGallery = null;
+
+/* ——— NAV ——— */
+function showView(id, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  currentView = id;
+  if (id === 'partite') loadPartite();
+  if (id === 'dopocena') loadRistoranti();
+  if (id === 'admin') renderAdminHome();
+}
+
+function renderNav() {
+  const el = document.getElementById('nav-auth');
+  if (currentUser) {
+    el.innerHTML = `
+      <span class="user-chip">👤 ${currentUser.nome}</span>
+      ${currentUser.ruolo === 'admin' ? `<button class="nav-btn login-btn" onclick="showView('admin',this)">⚙️ Admin</button>` : ''}
+      <button class="nav-btn logout-btn" onclick="doLogout()">Esci</button>`;
+  } else {
+    el.innerHTML = `<button class="nav-btn login-btn" onclick="showView('login',this)">Accedi</button>`;
+  }
+}
+
+/* ——— LOGIN ——— */
+async function doLogin() {
+  const username = document.getElementById('inp-user').value.trim().toLowerCase();
+  const password = document.getElementById('inp-pass').value;
+  document.getElementById('login-err').textContent = '';
+  if (!username || !password) { document.getElementById('login-err').textContent = 'Inserisci username e password.'; return; }
+
+  const { data, error } = await sb.rpc('verifica_login', { p_username: username, p_password: password });
+  if (error || !data || data.length === 0) {
+    document.getElementById('login-err').textContent = 'Username o password errati.';
+    return;
+  }
+  currentUser = data[0];
+  localStorage.setItem('mp_user', JSON.stringify(currentUser));
+  renderNav();
+  showView('partite', document.querySelector('.nav-btn'));
+  toast('Benvenuto, ' + currentUser.nome + '! 🏓');
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('mp_user');
+  renderNav();
+  showView('partite', document.querySelector('.nav-btn'));
+  toast('Arrivederci!');
+}
+
+/* ——— LOAD PARTITE ——— */
+async function loadPartite() {
+  const el = document.getElementById('list-partite');
+  el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-title">Caricamento...</div></div>';
+  const { data: serate } = await sb.from('serate').select('*').order('data', { ascending: false });
+  if (!serate || serate.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏸</div><div class="empty-title">Nessuna serata ancora</div><div class="empty-sub">L\'admin inserirà le partite dopo ogni serata</div></div>';
+    return;
+  }
+  let html = '';
+  for (const s of serate) {
+    const { data: partite } = await sb.from('partite').select('*').eq('serata_id', s.id);
+    const { data: commenti } = await sb.from('commenti_partita').select('*, giocatori(nome)').eq('serata_id', s.id).order('created_at');
+    const p = partite && partite[0];
+    html += `<div class="card">
+      <div class="card-hd">
+        <div><div class="card-date">${formatData(s.data)}</div></div>
+        ${s.titolo ? `<div class="card-badge">${s.titolo}</div>` : ''}
+      </div>
+      <div class="card-body">`;
+    if (p) {
+      const s1 = p.squadra1_nomi.split(',');
+      const s2 = p.squadra2_nomi.split(',');
+      const sets = p.set_dettaglio ? p.set_dettaglio.split('|') : [];
+      html += `
+        <div class="match-grid">
+          <div class="team">${s1.map(n=>`<span class="ptag">${n.trim()}</span>`).join('')}</div>
+          <div class="score-box"><div class="score">${p.punteggio_s1||'–'}–${p.punteggio_s2||'–'}</div><div class="score-lbl">set vinti</div></div>
+          <div class="team r">${s2.map(n=>`<span class="ptag">${n.trim()}</span>`).join('')}</div>
+        </div>
+        ${sets.length ? `<div class="sets">${sets.map(st=>`<div class="set-chip">${st}</div>`).join('')}</div>` : ''}`;
+    }
+    if (commenti && commenti.length) {
+      html += `<div class="divider"></div><div class="lbl">Commenti</div>`;
+      commenti.forEach(c => {
+        html += `<div class="commento">${c.testo}<div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div></div>`;
+      });
+    }
+    if (currentUser) {
+      html += `<div class="divider"></div>
+        <div class="lbl">Aggiungi il tuo commento</div>
+        <div class="commento-form">
+          <textarea id="ct-${s.id}" placeholder="Scrivi la tua versione della serata..."></textarea>
+          <div style="margin-top:0.5rem">
+            <button class="btn-save" style="padding:0.5rem 1.2rem;font-size:0.8rem" onclick="addCommento('partita','${s.id}','ct-${s.id}')">Pubblica</button>
+          </div>
+        </div>`;
+    }
+    html += `
+        <div class="divider"></div>
+        <div class="lbl">Foto della serata</div>
+        <div class="foto-grid" id="fg-${s.id}">
+          <button class="foto-add" onclick="triggerUpload('${s.id}')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 5l1.5-2.5h5L16 5"/></svg>
+            Aggiungi foto
+          </button>
+        </div>
+      </div></div>`;
+  }
+  el.innerHTML = html;
+  serate.forEach(s => renderGallery(s.id));
+}
+
+/* ——— LOAD RISTORANTI ——— */
+async function loadRistoranti() {
+  const el = document.getElementById('list-ristoranti');
+  el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-title">Caricamento...</div></div>';
+  const { data: serate } = await sb.from('serate').select('*').order('data', { ascending: false });
+  if (!serate || serate.length === 0) { el.innerHTML = '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nessuna cena ancora</div></div>'; return; }
+  let html = '';
+  for (const s of serate) {
+    const { data: rlist } = await sb.from('ristoranti').select('*').eq('serata_id', s.id);
+    if (!rlist || rlist.length === 0) continue;
+    const r = rlist[0];
+    const { data: vals } = await sb.from('valutazioni').select('*, giocatori(nome)').eq('ristorante_id', r.id);
+    const { data: commenti } = await sb.from('commenti_ristorante').select('*, giocatori(nome)').eq('ristorante_id', r.id).order('created_at');
+    const avgVal = campo => {
+      if (!vals || !vals.length) return null;
+      const v = vals.filter(x => x[campo] != null);
+      if (!v.length) return null;
+      return (v.reduce((a,b) => a + b[campo], 0) / v.length).toFixed(1);
+    };
+    html += `<div class="card">
+      <div class="card-hd-dark">
+        <div><div class="card-name">${r.nome}</div><div class="card-sub">📍 ${r.luogo||''} &nbsp;·&nbsp; ${formatData(s.data)}</div></div>
+        ${r.prezzo_persona ? `<div class="price-tag">€${r.prezzo_persona} / pers</div>` : ''}
+      </div>
+      <div class="card-body">`;
+    const menuItems = [
+      { key: 'menu_antipasto', label: '🥗 Antipasto' },
+      { key: 'menu_primo',     label: '🍝 Primo' },
+      { key: 'menu_secondo',   label: '🥩 Secondo' },
+      { key: 'menu_altro',     label: '🍮 Altro' }
+    ];
+    menuItems.forEach(m => {
+      if (r[m.key]) {
+        html += `<div class="menu-cat">${m.label}</div><div class="pills">${r[m.key].split(',').map(x=>`<span class="pill">${x.trim()}</span>`).join('')}</div>`;
+      }
+    });
+    const loc = avgVal('location'), cib = avgVal('cibo'), pre = avgVal('prezzo'), ser = avgVal('servizio');
+    if (loc || cib || pre || ser) {
+      html += `<div class="divider"></div><div class="lbl">Valutazione media del gruppo</div><div class="val-grid">`;
+      if (loc) html += valCard('📍 Location', loc);
+      if (cib) html += valCard('🍴 Cibo', cib);
+      if (pre) html += valCard('💶 Prezzo', pre);
+      if (ser) html += valCard('🤵 Servizio', ser);
+      html += `</div>`;
+    }
+    if (commenti && commenti.length) {
+      html += `<div class="divider"></div><div class="lbl">Commenti</div>`;
+      commenti.forEach(c => {
+        html += `<div class="commento">${c.testo}<div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div></div>`;
+      });
+    }
+    if (currentUser) {
+      const myVal = vals ? vals.find(v => v.giocatore_id === currentUser.id) : null;
+      html += `<div class="divider"></div>
+        <div class="lbl">La tua valutazione</div>
+        <div class="form-section" style="margin-bottom:0.5rem">
+          ${valInputRow('Location', 'vi-loc-'+r.id, myVal?.location)}
+          ${valInputRow('Cibo',     'vi-cib-'+r.id, myVal?.cibo)}
+          ${valInputRow('Prezzo',   'vi-pre-'+r.id, myVal?.prezzo)}
+          ${valInputRow('Servizio', 'vi-ser-'+r.id, myVal?.servizio)}
+          <div class="form-field"><label>Note</label><textarea id="vi-note-${r.id}" placeholder="Il tuo commento sulla cena...">${myVal ? '' : ''}</textarea></div>
+          <button class="btn-save" style="padding:0.5rem 1.2rem;font-size:0.8rem" onclick="saveValutazione('${r.id}','${s.id}')">Salva valutazione</button>
+        </div>`;
+    }
+    html += `</div></div>`;
+  }
+  if (!html) html = '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nessuna cena ancora</div></div>';
+  el.innerHTML = html;
+  document.querySelectorAll('[data-score]').forEach(setupStars);
+}
+
+function valCard(label, score) {
+  const n = Math.round(parseFloat(score));
+  let pale = '';
+  for (let i=1;i<=10;i++) pale += palaSVG(i<=n);
+  return `<div class="val-card"><div class="val-lbl">${label}</div><div style="display:flex;align-items:baseline;gap:6px"><div class="val-score">${score}</div><div class="pale-row">${pale}</div></div></div>`;
+}
+
+function valInputRow(label, id, current) {
+  const val = current || 0;
+  let stars = '';
+  for (let i=1;i<=10;i++) stars += `<button class="star-btn ${i<=val?'on':''}" data-val="${i}" onclick="setStars('${id}',${i})">🏓</button>`;
+  return `<div class="val-input-row"><label>${label}</label><div class="star-row" id="${id}" data-score="${val}">${stars}</div></div>`;
+}
+
+function setStars(id, val) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.dataset.score = val;
+  row.querySelectorAll('.star-btn').forEach((b,i) => b.classList.toggle('on', i < val));
+}
+
+async function saveValutazione(ristId, serataId) {
+  if (!currentUser) return;
+  const get = id => { const el = document.getElementById(id); return el ? parseInt(el.dataset.score)||null : null; };
+  const note = document.getElementById('vi-note-'+ristId)?.value || '';
+  const payload = {
+    ristorante_id: ristId,
+    giocatore_id: currentUser.id,
+    location: get('vi-loc-'+ristId),
+    cibo:     get('vi-cib-'+ristId),
+    prezzo:   get('vi-pre-'+ristId),
+    servizio: get('vi-ser-'+ristId),
+    note_cibo: note
+  };
+  const { data: existing } = await sb.from('valutazioni').select('id').eq('ristorante_id', ristId).eq('giocatore_id', currentUser.id);
+  if (existing && existing.length) {
+    await sb.from('valutazioni').update(payload).eq('id', existing[0].id);
+  } else {
+    await sb.from('valutazioni').insert(payload);
+  }
+  toast('Valutazione salvata! 🏓');
+  loadRistoranti();
+}
+
+async function addCommento(tipo, id, textareaId) {
+  if (!currentUser) return;
+  const testo = document.getElementById(textareaId)?.value?.trim();
+  if (!testo) return;
+  if (tipo === 'partita') {
+    await sb.from('commenti_partita').insert({ serata_id: id, giocatore_id: currentUser.id, testo });
+    loadPartite();
+  } else {
+    await sb.from('commenti_ristorante').insert({ ristorante_id: id, giocatore_id: currentUser.id, testo });
+    loadRistoranti();
+  }
+  toast('Commento pubblicato! 💬');
+}
+
+/* ——— ADMIN ——— */
+function renderAdminHome() {
+  document.getElementById('admin-section').innerHTML = '';
+}
+
+function showAdminSection(sec) {
+  const el = document.getElementById('admin-section');
+  if (sec === 'nuova-serata') el.innerHTML = formNuovaSerata();
+  if (sec === 'giocatori')    el.innerHTML = formGiocatori();
+  if (sec === 'gestione-serate') loadGestioneSerate();
+  if (sec === 'commenti') loadModCommenti();
+}
+
+function formNuovaSerata() {
+  return `<div class="form-section">
+    <h3>📅 Nuova serata</h3>
+    <div class="form-row">
+      <div class="form-field"><label>Data</label><input type="date" id="f-data" value="${new Date().toISOString().split('T')[0]}"/></div>
+      <div class="form-field"><label>Titolo (opz.)</label><input type="text" id="f-titolo" placeholder="es. Serie A dei poveri"/></div>
+    </div>
+    <h3 style="margin-top:1rem">🏓 Partita</h3>
+    <div class="form-row">
+      <div class="form-field"><label>Squadra 1 (nomi separati da virgola)</label><input type="text" id="f-s1" placeholder="Fra, Fabio"/></div>
+      <div class="form-field"><label>Squadra 2</label><input type="text" id="f-s2" placeholder="Ale, Samu"/></div>
+    </div>
+    <div class="form-field"><label>Set (es. 6-3|4-6|6-4)</label><input type="text" id="f-sets" placeholder="6-3|4-6|6-4"/></div>
+    <h3 style="margin-top:1rem">🍽️ Ristorante</h3>
+    <div class="form-row">
+      <div class="form-field"><label>Nome</label><input type="text" id="f-rist" placeholder="Osteria da Mario"/></div>
+      <div class="form-field"><label>Luogo</label><input type="text" id="f-luogo" placeholder="Firenze centro"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Prezzo a persona (€)</label><input type="number" id="f-prezzo" placeholder="28"/></div>
+    </div>
+    <div class="form-field"><label>Antipasto (separati da virgola)</label><input type="text" id="f-ant" placeholder="Tagliere, Bruschette"/></div>
+    <div class="form-field"><label>Primo</label><input type="text" id="f-pri" placeholder="Pappardelle al cinghiale"/></div>
+    <div class="form-field"><label>Secondo</label><input type="text" id="f-sec" placeholder="Peposo, Spinaci"/></div>
+    <div class="form-field"><label>Altro (dolci, vino…)</label><input type="text" id="f-alt" placeholder="Tiramisù, Chianti"/></div>
+    <div style="margin-top:1rem">
+      <button class="btn-save" onclick="saveSerata()">💾 Salva serata</button>
+    </div>
+    <div id="save-msg"></div>
+  </div>`;
+}
+
+async function saveSerata() {
+  const data = document.getElementById('f-data').value;
+  const titolo = document.getElementById('f-titolo').value;
+  const s1 = document.getElementById('f-s1').value.trim();
+  const s2 = document.getElementById('f-s2').value.trim();
+  const sets = document.getElementById('f-sets').value.trim();
+  const ristNome = document.getElementById('f-rist').value.trim();
+
+  if (!data) { showMsg('save-msg','Inserisci la data.',true); return; }
+
+  // Calcola set vinti
+  let ps1=0, ps2=0;
+  if (sets) {
+    sets.split('|').forEach(st => {
+      const [a,b] = st.split('-').map(Number);
+      if (!isNaN(a)&&!isNaN(b)) { if(a>b) ps1++; else ps2++; }
+    });
+  }
+
+  const { data: ser, error } = await sb.from('serate').insert({ data, titolo }).select();
+  if (error) { showMsg('save-msg','Errore nel salvare la serata.',true); return; }
+  const serataId = ser[0].id;
+
+  if (s1 && s2) {
+    await sb.from('partite').insert({
+      serata_id: serataId,
+      squadra1_nomi: s1, squadra2_nomi: s2,
+      punteggio_s1: String(ps1), punteggio_s2: String(ps2),
+      set_dettaglio: sets
+    });
+  }
+
+  if (ristNome) {
+    await sb.from('ristoranti').insert({
+      serata_id: serataId,
+      nome: ristNome,
+      luogo: document.getElementById('f-luogo').value,
+      prezzo_persona: parseFloat(document.getElementById('f-prezzo').value)||null,
+      menu_antipasto: document.getElementById('f-ant').value,
+      menu_primo: document.getElementById('f-pri').value,
+      menu_secondo: document.getElementById('f-sec').value,
+      menu_altro: document.getElementById('f-alt').value
+    });
+  }
+
+  showMsg('save-msg','✅ Serata salvata con successo!', false);
+  toast('Serata creata! 🎉');
+}
+
+async function loadGestioneSerate() {
+  const el = document.getElementById('admin-section');
+  el.innerHTML = '<div class="form-section"><h3>📋 Serate esistenti</h3><div id="gest-list">Caricamento...</div></div>';
+  const { data } = await sb.from('serate').select('*').order('data',{ascending:false});
+  if (!data||!data.length) { document.getElementById('gest-list').innerHTML='<p style="color:var(--gray)">Nessuna serata.</p>'; return; }
+  document.getElementById('gest-list').innerHTML = data.map(s => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid var(--gray-light)">
+      <div><strong>${formatData(s.data)}</strong> ${s.titolo?`<span style="color:var(--gray);font-size:0.85rem">— ${s.titolo}</span>`:''}</div>
+      <button class="btn-danger" onclick="deleteSerata('${s.id}')">Elimina</button>
+    </div>`).join('');
+}
+
+async function deleteSerata(id) {
+  if (!confirm('Eliminare questa serata e tutti i dati collegati?')) return;
+  await sb.from('serate').delete().eq('id',id);
+  toast('Serata eliminata.');
+  loadGestioneSerate();
+}
+
+function formGiocatori() {
+  return `<div class="form-section">
+    <h3>👥 Cambia password giocatore</h3>
+    <div class="form-field"><label>Username</label><input type="text" id="g-user" placeholder="es. fabio"/></div>
+    <div class="form-field"><label>Nuova password</label><input type="password" id="g-pass" placeholder="nuova password"/></div>
+    <button class="btn-save" onclick="changePassword()">Aggiorna password</button>
+    <div id="g-msg"></div>
+  </div>`;
+}
+
+async function changePassword() {
+  const username = document.getElementById('g-user').value.trim().toLowerCase();
+  const pass = document.getElementById('g-pass').value;
+  if (!username||!pass) { showMsg('g-msg','Compila tutti i campi.',true); return; }
+  const { error } = await sb.rpc('aggiorna_password', { p_username: username, p_nuova_password: pass });
+  if (error) { showMsg('g-msg','Errore: '+error.message,true); return; }
+  showMsg('g-msg','✅ Password aggiornata!',false);
+}
+
+async function loadModCommenti() {
+  const el = document.getElementById('admin-section');
+  el.innerHTML = '<div class="form-section"><h3>💬 Modera commenti</h3><div id="mod-list">Caricamento...</div></div>';
+  const { data: cp } = await sb.from('commenti_partita').select('*, giocatori(nome), serate(data)').order('created_at',{ascending:false});
+  const { data: cr } = await sb.from('commenti_ristorante').select('*, giocatori(nome), ristoranti(nome)').order('created_at',{ascending:false});
+  let html = '';
+  if (cp&&cp.length) {
+    html += '<div style="font-weight:600;margin-bottom:0.5rem;color:var(--verde)">Commenti partite</div>';
+    cp.forEach(c => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
+        <div><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome} · ${formatData(c.serate?.data)}</span><br>${c.testo}</div>
+        <button class="btn-danger" onclick="delCommentoPartita('${c.id}')">Elimina</button></div>`;
+    });
+  }
+  if (cr&&cr.length) {
+    html += '<div style="font-weight:600;margin:1rem 0 0.5rem;color:var(--verde)">Commenti ristoranti</div>';
+    cr.forEach(c => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--gray-light);gap:1rem">
+        <div><span style="font-size:0.78rem;color:var(--gray)">${c.giocatori?.nome} · ${c.ristoranti?.nome}</span><br>${c.testo}</div>
+        <button class="btn-danger" onclick="delCommentoRist('${c.id}')">Elimina</button></div>`;
+    });
+  }
+  if (!html) html = '<p style="color:var(--gray)">Nessun commento.</p>';
+  document.getElementById('mod-list').innerHTML = html;
+}
+
+async function delCommentoPartita(id) {
+  await sb.from('commenti_partita').delete().eq('id',id);
+  toast('Commento eliminato.');
+  loadModCommenti();
+}
+async function delCommentoRist(id) {
+  await sb.from('commenti_ristorante').delete().eq('id',id);
+  toast('Commento eliminato.');
+  loadModCommenti();
+}
+
+/* ——— FOTO ——— */
+function triggerUpload(id) { currentGallery = id; document.getElementById('file-input').value=''; document.getElementById('file-input').click(); }
+
+function handleFiles(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length||!currentGallery) return;
+  if (!galleries[currentGallery]) galleries[currentGallery]=[];
+  files.forEach(f => {
+    const r = new FileReader();
+    r.onload = ev => { galleries[currentGallery].push({src:ev.target.result,name:f.name}); renderGallery(currentGallery); };
+    r.readAsDataURL(f);
+  });
+}
+
+function renderGallery(id) {
+  const grid = document.getElementById('fg-'+id);
+  if (!grid) return;
+  const items = galleries[id]||[];
+  let html = items.map((item,idx) => `
+    <div class="foto-item" onclick="openLb('${id}',${idx})">
+      <img src="${item.src}" alt="${item.name}">
+      <button class="foto-del" onclick="delFoto(event,'${id}',${idx})">✕</button>
+    </div>`).join('');
+  html += `<button class="foto-add" onclick="triggerUpload('${id}')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 5l1.5-2.5h5L16 5"/></svg>
+    Aggiungi</button>`;
+  grid.innerHTML = html;
+}
+
+function delFoto(e,id,idx) { e.stopPropagation(); galleries[id].splice(idx,1); renderGallery(id); }
+function openLb(id,idx) { lbImages=galleries[id]||[]; lbIdx=idx; document.getElementById('lb-img').src=lbImages[lbIdx].src; document.getElementById('lightbox').classList.add('open'); }
+function lbClose() { document.getElementById('lightbox').classList.remove('open'); }
+function lbBgClose(e) { if(e.target===document.getElementById('lightbox')) lbClose(); }
+function lbNav(dir,e) { e.stopPropagation(); lbIdx=(lbIdx+dir+lbImages.length)%lbImages.length; document.getElementById('lb-img').src=lbImages[lbIdx].src; }
+document.addEventListener('keydown',e=>{ const lb=document.getElementById('lightbox'); if(!lb.classList.contains('open'))return; if(e.key==='Escape')lbClose(); if(e.key==='ArrowRight')lbNav(1,{stopPropagation:()=>{}}); if(e.key==='ArrowLeft')lbNav(-1,{stopPropagation:()=>{}}); });
+
+/* ——— UTILS ——— */
+function palaSVG(filled) {
+  const f=filled?'#2a5c3f':'#ddd';
+  return `<svg class="pala-svg" viewBox="0 0 21 26" xmlns="http://www.w3.org/2000/svg"><ellipse cx="10.5" cy="10" rx="8" ry="9.5" fill="${f}"/><rect x="8.5" y="19.5" width="4" height="6" rx="1.5" fill="${filled?'#3a2418':'#ccc'}"/></svg>`;
+}
+
+function formatData(d) {
+  if (!d) return '';
+  const dt = new Date(d+'T12:00:00');
+  return dt.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+function showMsg(id, msg, isErr) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isErr ? 'var(--red)' : 'var(--verde)';
+  el.style.marginTop = '0.8rem';
+  el.style.fontSize = '0.85rem';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+/* ——— INIT ——— */
+const saved = localStorage.getItem('mp_user');
+if (saved) { try { currentUser = JSON.parse(saved); } catch(e) {} }
+renderNav();
+loadPartite();
+</script>
+</body>
+</html>
