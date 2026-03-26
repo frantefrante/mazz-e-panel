@@ -19,7 +19,8 @@ body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--dark);
 /* ——— HEADER ——— */
 header{background:var(--verde);padding:2rem 1.5rem 1.5rem;text-align:center;}
 header::before{display:none;}
-.logo-svg{width:130px;height:130px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.45));margin-bottom:0.8rem;object-fit:contain;}
+.logo-svg{width:160px;height:160px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.45));object-fit:contain;flex-shrink:0;}
+.header-title-wrap{display:flex;align-items:center;justify-content:center;gap:1.2rem;}
 .site-title{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:#fff;letter-spacing:-1px;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,0.3);}
 .site-title span{color:var(--gold-light);}
 .site-subtitle{font-family:'Oswald',sans-serif;font-size:1rem;font-weight:500;color:rgba(255,255,255,0.8);letter-spacing:3px;text-transform:uppercase;margin-top:0.4rem;}
@@ -190,10 +191,10 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 <body>
 
 <header>
-  <!-- LOGO X -->
-  <img class="logo-svg" src="logo mazz.png" alt="Mazz e Panell logo"/>
-
-  <div class="site-title">Mazz <span>&</span> Panell</div>
+  <div class="header-title-wrap">
+    <img class="logo-svg" src="logo mazz.png" alt="Mazz e Panell logo"/>
+    <div class="site-title">Mazz <span>&</span> Panell</div>
+  </div>
   <div class="site-subtitle">Fann i figl bell</div>
   <div class="pronounce">[ ˈfannə ɪ ˈfiʎʎ bɛll ]</div>
   <div class="dialect-note">in dialetto grassanese: "mazzate e pagnotte traghettano i figli verso la luce"</div>
