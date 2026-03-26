@@ -505,7 +505,6 @@ async function loadRistoranti() {
   }
   if (!html) html = '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nessuna cena ancora</div></div>';
   el.innerHTML = html;
-  document.querySelectorAll('[data-score]').forEach(setupStars);
 }
 
 function valCard(label, score) {
