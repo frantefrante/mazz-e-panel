@@ -291,6 +291,12 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 const SUPA_URL = 'https://mogoinynipdxsxospkos.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vZ29pbnluaXBkeHN4b3Nwa29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MTYwODIsImV4cCI6MjA5MDA5MjA4Mn0.9DhcQkJLIJrEGKNDH2HfLjnetws-FqP9tI2fgin3cq4';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const VAPID_PUBLIC = 'BNpENlZ6La6fSb_rgc6Db17h-hT_gsqRi6pU-QY61VX8z1kWnBzPWRWLJ0hZPFkQaVPho-NfxmoHiSRM2rdMyPg';
+const NOTIFY_URL = SUPA_URL + '/functions/v1/send-notification';
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 
 let currentUser = null;
 let currentView = 'partite';
@@ -313,8 +319,10 @@ function showView(id, btn) {
 function renderNav() {
   const el = document.getElementById('nav-auth');
   if (currentUser) {
+    const pushOn = localStorage.getItem('push_sub') === '1';
     el.innerHTML = `
       <span class="user-chip">👤 ${currentUser.nome}</span>
+      <button class="nav-btn" title="${pushOn ? 'Disattiva notifiche' : 'Attiva notifiche'}" onclick="${pushOn ? 'unsubscribeFromPush' : 'subscribeToPush'}()">${pushOn ? '🔔' : '🔕'}</button>
       ${currentUser.ruolo === 'admin' ? `<button class="nav-btn login-btn" onclick="showView('admin',this)">⚙️ Admin</button>` : ''}
       <button class="nav-btn logout-btn" onclick="doLogout()">Esci</button>`;
   } else {
@@ -583,6 +591,50 @@ async function saveValutazione(ristId, serataId) {
   loadRistoranti();
 }
 
+function urlBase64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function subscribeToPush() {
+  if (!currentUser || !('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    await sb.from('push_subscriptions').upsert({ giocatore_id: currentUser.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'giocatore_id,endpoint' });
+    localStorage.setItem('push_sub', '1');
+    renderNav();
+    toast('Notifiche attivate! 🔔');
+  } catch(e) {
+    toast('Notifiche non supportate o negate dal browser.');
+  }
+}
+
+async function unsubscribeFromPush() {
+  if (!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+    await sub.unsubscribe();
+  }
+  localStorage.removeItem('push_sub');
+  renderNav();
+  toast('Notifiche disattivate.');
+}
+
+async function sendNotification(title, body) {
+  try {
+    await fetch(NOTIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPA_KEY}` },
+      body: JSON.stringify({ title, body, excludeGiocatoreId: currentUser?.id })
+    });
+  } catch(e) {}
+}
+
 async function addCommento(tipo, id, textareaId, parentId) {
   if (!currentUser) return;
   const testo = document.getElementById(textareaId)?.value?.trim();
@@ -591,9 +643,11 @@ async function addCommento(tipo, id, textareaId, parentId) {
     const payload = { serata_id: id, giocatore_id: currentUser.id, testo };
     if (parentId) payload.parent_id = parentId;
     await sb.from('commenti_partita').insert(payload);
+    sendNotification('Mazz e Panell 💬', `${currentUser.nome} ha scritto: "${testo.substring(0,60)}${testo.length>60?'…':''}"`);
     loadPartite();
   } else {
     await sb.from('commenti_ristorante').insert({ ristorante_id: id, giocatore_id: currentUser.id, testo });
+    sendNotification('Mazz e Panell 🍽️', `${currentUser.nome} ha commentato la cena: "${testo.substring(0,60)}${testo.length>60?'…':''}"`);
     loadRistoranti();
   }
   toast('Commento pubblicato! 💬');
@@ -611,6 +665,7 @@ async function addCommentoRist(ristId, textareaId, parentId) {
   const payload = { ristorante_id: ristId, giocatore_id: currentUser.id, testo };
   if (parentId) payload.parent_id = parentId;
   await sb.from('commenti_ristorante').insert(payload);
+  sendNotification('Mazz e Panell 🍽️', `${currentUser.nome} ha risposto a un commento sulla cena`);
   toast('Commento pubblicato! 💬');
   loadRistoranti();
 }
