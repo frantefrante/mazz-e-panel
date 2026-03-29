@@ -293,6 +293,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const VAPID_PUBLIC = 'BNpENlZ6La6fSb_rgc6Db17h-hT_gsqRi6pU-QY61VX8z1kWnBzPWRWLJ0hZPFkQaVPho-NfxmoHiSRM2rdMyPg';
 const NOTIFY_URL = SUPA_URL + '/functions/v1/send-notification';
+const EMAIL_NOTIFY_URL = SUPA_URL + '/functions/v1/send-email-notification';
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -320,9 +321,11 @@ function renderNav() {
   const el = document.getElementById('nav-auth');
   if (currentUser) {
     const pushOn = localStorage.getItem('push_sub') === '1';
+    const emailOn = localStorage.getItem('email_sub') === '1';
     el.innerHTML = `
       <span class="user-chip">👤 ${currentUser.nome}</span>
       <button class="nav-btn" title="${pushOn ? 'Disattiva notifiche' : 'Attiva notifiche'}" onclick="${pushOn ? 'unsubscribeFromPush' : 'subscribeToPush'}()">${pushOn ? '🔔' : '🔕'}</button>
+      <button class="nav-btn" title="${emailOn ? 'Disattiva notifiche email' : 'Attiva notifiche email'}" onclick="${emailOn ? 'unsubscribeEmail' : 'subscribeEmail'}()">✉️${emailOn ? ' ON' : ''}</button>
       ${currentUser.ruolo === 'admin' ? `<button class="nav-btn login-btn" onclick="showView('admin',this)">⚙️ Admin</button>` : ''}
       <button class="nav-btn logout-btn" onclick="doLogout()">Esci</button>`;
   } else {
@@ -626,13 +629,29 @@ async function unsubscribeFromPush() {
 }
 
 async function sendNotification(title, body) {
-  try {
-    await fetch(NOTIFY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPA_KEY}` },
-      body: JSON.stringify({ title, body, excludeGiocatoreId: currentUser?.id })
-    });
-  } catch(e) {}
+  const payload = JSON.stringify({ title, body, excludeGiocatoreId: currentUser?.id });
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPA_KEY}` };
+  try { await fetch(NOTIFY_URL, { method: 'POST', headers, body: payload }); } catch(e) {}
+  try { await fetch(EMAIL_NOTIFY_URL, { method: 'POST', headers, body: payload }); } catch(e) {}
+}
+
+async function subscribeEmail() {
+  if (!currentUser) return;
+  const email = prompt('Inserisci la tua email per ricevere notifiche:');
+  if (!email || !email.includes('@')) { toast('Email non valida.'); return; }
+  const { error } = await sb.from('email_subscriptions').upsert({ giocatore_id: currentUser.id, email }, { onConflict: 'giocatore_id' });
+  if (error) { toast('Errore: ' + error.message); return; }
+  localStorage.setItem('email_sub', '1');
+  renderNav();
+  toast('Notifiche email attivate! ✉️');
+}
+
+async function unsubscribeEmail() {
+  if (!currentUser) return;
+  await sb.from('email_subscriptions').delete().eq('giocatore_id', currentUser.id);
+  localStorage.removeItem('email_sub');
+  renderNav();
+  toast('Notifiche email disattivate.');
 }
 
 async function addCommento(tipo, id, textareaId, parentId) {
