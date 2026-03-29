@@ -295,9 +295,6 @@ const VAPID_PUBLIC = 'BNpENlZ6La6fSb_rgc6Db17h-hT_gsqRi6pU-QY61VX8z1kWnBzPWRWLJ0
 const NOTIFY_URL = SUPA_URL + '/functions/v1/send-notification';
 const EMAIL_NOTIFY_URL = SUPA_URL + '/functions/v1/send-email-notification';
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
 
 let currentUser = null;
 let currentView = 'partite';
@@ -320,11 +317,9 @@ function showView(id, btn) {
 function renderNav() {
   const el = document.getElementById('nav-auth');
   if (currentUser) {
-    const pushOn = localStorage.getItem('push_sub') === '1';
     const emailOn = localStorage.getItem('email_sub') === '1';
     el.innerHTML = `
       <span class="user-chip">👤 ${currentUser.nome}</span>
-      <button class="nav-btn" title="${pushOn ? 'Disattiva notifiche' : 'Attiva notifiche'}" onclick="${pushOn ? 'unsubscribeFromPush' : 'subscribeToPush'}()">${pushOn ? '🔔' : '🔕'}</button>
       <button class="nav-btn" title="${emailOn ? 'Disattiva notifiche email' : 'Attiva notifiche email'}" onclick="${emailOn ? 'unsubscribeEmail' : 'subscribeEmail'}()">✉️${emailOn ? ' ON' : ''}</button>
       ${currentUser.ruolo === 'admin' ? `<button class="nav-btn login-btn" onclick="showView('admin',this)">⚙️ Admin</button>` : ''}
       <button class="nav-btn logout-btn" onclick="doLogout()">Esci</button>`;
