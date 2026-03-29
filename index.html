@@ -76,6 +76,12 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 .lbl{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--gray);font-weight:600;margin-bottom:0.45rem;}
 .commento{font-size:0.92rem;line-height:1.7;color:#333;border-left:3px solid var(--gold);padding-left:1rem;font-style:italic;margin-bottom:0.8rem;}
 .commento-author{font-size:0.75rem;color:var(--gray);margin-top:0.3rem;font-style:normal;}
+.commento-meta{font-size:0.72rem;color:var(--gray);margin-top:0.2rem;opacity:0.8;}
+.commento-reply-btn{font-size:0.72rem;color:var(--verde);background:none;border:none;cursor:pointer;padding:0;margin-top:0.3rem;text-decoration:underline;}
+.commento-reply{margin-left:1.5rem;border-left:2px solid var(--gold-light);padding-left:0.8rem;margin-top:0.5rem;}
+.reply-form{margin-left:1.5rem;margin-top:0.4rem;padding-left:0.8rem;border-left:2px solid var(--verde);}
+.reply-form textarea{width:100%;padding:0.4rem;border:1.5px solid var(--gray-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.85rem;resize:vertical;min-height:55px;outline:none;}
+.reply-form textarea:focus{border-color:var(--verde);}
 .divider{height:1px;background:var(--gray-light);margin:1.1rem 0;}
 
 /* ——— MENU PILLS ——— */
@@ -377,8 +383,29 @@ async function loadPartite() {
     }
     if (commenti && commenti.length) {
       html += `<div class="divider"></div><div class="lbl">Commenti</div>`;
-      commenti.forEach(c => {
-        html += `<div class="commento">${c.testo}<div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div></div>`;
+      const topLevel = commenti.filter(c => !c.parent_id);
+      const replies = commenti.filter(c => c.parent_id);
+      topLevel.forEach(c => {
+        html += `<div class="commento">
+          ${c.testo}
+          <div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div>
+          <div class="commento-meta">${formatDateTime(c.created_at)}</div>
+          ${currentUser ? `<button class="commento-reply-btn" onclick="toggleReplyForm('${c.id}','${s.id}')">↩ Rispondi</button>` : ''}
+          <div id="reply-form-${c.id}" style="display:none" class="reply-form">
+            <textarea id="reply-ta-${c.id}" placeholder="Scrivi una risposta..."></textarea>
+            <div style="display:flex;gap:0.4rem;margin-top:0.3rem">
+              <button class="btn-save" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="addCommento('partita','${s.id}','reply-ta-${c.id}','${c.id}')">Pubblica</button>
+              <button class="btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="toggleReplyForm('${c.id}','${s.id}')">Annulla</button>
+            </div>
+          </div>
+          ${replies.filter(r => r.parent_id === c.id).map(r => `
+            <div class="commento-reply">
+              <div class="commento" style="margin-bottom:0">${r.testo}
+                <div class="commento-author">— ${r.giocatori?.nome || 'Anonimo'}</div>
+                <div class="commento-meta">${formatDateTime(r.created_at)}</div>
+              </div>
+            </div>`).join('')}
+        </div>`;
       });
     }
     if (currentUser) {
@@ -432,10 +459,13 @@ async function loadRistoranti() {
       </div>
       <div class="card-body">`;
     const menuItems = [
-      { key: 'menu_antipasto', label: '🥗 Antipasto' },
-      { key: 'menu_primo',     label: '🍝 Primo' },
-      { key: 'menu_secondo',   label: '🥩 Secondo' },
-      { key: 'menu_altro',     label: '🍮 Altro' }
+      { key: 'menu_antipasto',  label: '🥗 Antipasto' },
+      { key: 'menu_primo',      label: '🍝 Primo' },
+      { key: 'menu_secondo',    label: '🥩 Secondo' },
+      { key: 'menu_altro',      label: '🍮 Altro' },
+      { key: 'menu_bevande',    label: '🍷 Bevande' },
+      { key: 'menu_dolci',      label: '🍰 Dolci' },
+      { key: 'menu_fuori_menu', label: '🤫 Fuori menù (x Samu)' }
     ];
     menuItems.forEach(m => {
       if (r[m.key]) {
@@ -532,18 +562,25 @@ async function saveValutazione(ristId, serataId) {
   loadRistoranti();
 }
 
-async function addCommento(tipo, id, textareaId) {
+async function addCommento(tipo, id, textareaId, parentId) {
   if (!currentUser) return;
   const testo = document.getElementById(textareaId)?.value?.trim();
   if (!testo) return;
   if (tipo === 'partita') {
-    await sb.from('commenti_partita').insert({ serata_id: id, giocatore_id: currentUser.id, testo });
+    const payload = { serata_id: id, giocatore_id: currentUser.id, testo };
+    if (parentId) payload.parent_id = parentId;
+    await sb.from('commenti_partita').insert(payload);
     loadPartite();
   } else {
     await sb.from('commenti_ristorante').insert({ ristorante_id: id, giocatore_id: currentUser.id, testo });
     loadRistoranti();
   }
   toast('Commento pubblicato! 💬');
+}
+
+function toggleReplyForm(commentoId, serataId) {
+  const el = document.getElementById('reply-form-'+commentoId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 /* ——— ADMIN ——— */
@@ -726,6 +763,9 @@ async function editSerata(serataId) {
       <div class="form-field"><label>Primo</label><input type="text" id="er-pri" value="${r?.menu_primo||''}"/></div>
       <div class="form-field"><label>Secondo</label><input type="text" id="er-sec" value="${r?.menu_secondo||''}"/></div>
       <div class="form-field"><label>Altro</label><input type="text" id="er-alt" value="${r?.menu_altro||''}"/></div>
+      <div class="form-field"><label>Bevande</label><input type="text" id="er-bev" value="${r?.menu_bevande||''}"/></div>
+      <div class="form-field"><label>Dolci</label><input type="text" id="er-dol" value="${r?.menu_dolci||''}"/></div>
+      <div class="form-field"><label>Fuori menù (x Samu)</label><input type="text" id="er-fuo" value="${r?.menu_fuori_menu||''}"/></div>
       <button class="btn-save" onclick="updateRistorante('${serataId}','${r?.id||''}')">Salva</button>
       <div id="msg-rist"></div>
     </div>
@@ -797,7 +837,10 @@ async function updateRistorante(serataId, ristId) {
     menu_antipasto: document.getElementById('er-ant').value,
     menu_primo: document.getElementById('er-pri').value,
     menu_secondo: document.getElementById('er-sec').value,
-    menu_altro: document.getElementById('er-alt').value
+    menu_altro: document.getElementById('er-alt').value,
+    menu_bevande: document.getElementById('er-bev').value,
+    menu_dolci: document.getElementById('er-dol').value,
+    menu_fuori_menu: document.getElementById('er-fuo').value
   };
   let error;
   if (ristId) {
@@ -1009,6 +1052,13 @@ function formatData(d) {
   if (!d) return '';
   const dt = new Date(d+'T12:00:00');
   return dt.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+function formatDateTime(ts) {
+  if (!ts) return '';
+  const dt = new Date(ts);
+  return dt.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'}) + ' ' +
+         dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
 }
 
 function showMsg(id, msg, isErr) {
