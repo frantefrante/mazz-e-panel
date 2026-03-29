@@ -390,12 +390,12 @@ async function loadPartite() {
           ${c.testo}
           <div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div>
           <div class="commento-meta">${formatDateTime(c.created_at)}</div>
-          ${currentUser ? `<button class="commento-reply-btn" onclick="toggleReplyForm('${c.id}','${s.id}')">↩ Rispondi</button>` : ''}
+          ${currentUser ? `<button class="commento-reply-btn" onclick="toggleReplyForm('${c.id}')">↩ Rispondi</button>` : ''}
           <div id="reply-form-${c.id}" style="display:none" class="reply-form">
             <textarea id="reply-ta-${c.id}" placeholder="Scrivi una risposta..."></textarea>
             <div style="display:flex;gap:0.4rem;margin-top:0.3rem">
               <button class="btn-save" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="addCommento('partita','${s.id}','reply-ta-${c.id}','${c.id}')">Pubblica</button>
-              <button class="btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="toggleReplyForm('${c.id}','${s.id}')">Annulla</button>
+              <button class="btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="toggleReplyForm('${c.id}')">Annulla</button>
             </div>
           </div>
           ${replies.filter(r => r.parent_id === c.id).map(r => `
@@ -483,8 +483,29 @@ async function loadRistoranti() {
     }
     if (commenti && commenti.length) {
       html += `<div class="divider"></div><div class="lbl">Commenti</div>`;
-      commenti.forEach(c => {
-        html += `<div class="commento">${c.testo}<div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div></div>`;
+      const topLevel = commenti.filter(c => !c.parent_id);
+      const replies = commenti.filter(c => c.parent_id);
+      topLevel.forEach(c => {
+        html += `<div class="commento">
+          ${c.testo}
+          <div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div>
+          <div class="commento-meta">${formatDateTime(c.created_at)}</div>
+          ${currentUser ? `<button class="commento-reply-btn" onclick="toggleReplyForm('rist-${c.id}')">↩ Rispondi</button>` : ''}
+          <div id="reply-form-rist-${c.id}" style="display:none" class="reply-form">
+            <textarea id="reply-ta-rist-${c.id}" placeholder="Scrivi una risposta..."></textarea>
+            <div style="display:flex;gap:0.4rem;margin-top:0.3rem">
+              <button class="btn-save" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="addCommentoRist('${r.id}','reply-ta-rist-${c.id}','${c.id}')">Pubblica</button>
+              <button class="btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.78rem" onclick="toggleReplyForm('rist-${c.id}')">Annulla</button>
+            </div>
+          </div>
+          ${replies.filter(rep => rep.parent_id === c.id).map(rep => `
+            <div class="commento-reply">
+              <div class="commento" style="margin-bottom:0">${rep.testo}
+                <div class="commento-author">— ${rep.giocatori?.nome || 'Anonimo'}</div>
+                <div class="commento-meta">${formatDateTime(rep.created_at)}</div>
+              </div>
+            </div>`).join('')}
+        </div>`;
       });
     }
     if (currentUser) {
@@ -578,9 +599,20 @@ async function addCommento(tipo, id, textareaId, parentId) {
   toast('Commento pubblicato! 💬');
 }
 
-function toggleReplyForm(commentoId, serataId) {
+function toggleReplyForm(commentoId) {
   const el = document.getElementById('reply-form-'+commentoId);
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function addCommentoRist(ristId, textareaId, parentId) {
+  if (!currentUser) return;
+  const testo = document.getElementById(textareaId)?.value?.trim();
+  if (!testo) return;
+  const payload = { ristorante_id: ristId, giocatore_id: currentUser.id, testo };
+  if (parentId) payload.parent_id = parentId;
+  await sb.from('commenti_ristorante').insert(payload);
+  toast('Commento pubblicato! 💬');
+  loadRistoranti();
 }
 
 /* ——— ADMIN ——— */
