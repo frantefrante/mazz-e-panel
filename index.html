@@ -160,6 +160,19 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 .star-btn{background:none;border:none;cursor:pointer;padding:2px;font-size:1.1rem;opacity:0.25;transition:opacity 0.15s;}
 .star-btn.on{opacity:1;}
 
+/* ——— GIOCATORI ——— */
+.giocatori-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;padding:0.5rem 0;}
+.giocatore-card{background:#fff;border-radius:16px;border:1px solid var(--gray-light);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07);transition:transform 0.15s;}
+.giocatore-card:hover{transform:translateY(-3px);}
+.giocatore-foto{width:100%;height:200px;object-fit:cover;display:block;background:var(--verde-pale);}
+.giocatore-foto-placeholder{width:100%;height:200px;display:flex;align-items:center;justify-content:center;background:var(--verde-pale);font-size:4rem;}
+.giocatore-body{padding:1.2rem;}
+.giocatore-nome-battaglia{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--verde);margin-bottom:0.2rem;}
+.giocatore-nome-vero{font-size:0.82rem;color:var(--gray);margin-bottom:0.8rem;}
+.giocatore-tag{display:inline-block;background:var(--verde-pale);color:var(--verde);font-size:0.75rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:20px;margin-right:0.3rem;margin-bottom:0.3rem;}
+.giocatore-pala{margin-top:0.8rem;font-size:0.85rem;color:var(--gray-dark);border-top:1px solid var(--gray-light);padding-top:0.8rem;}
+.giocatore-caratteristiche{font-size:0.88rem;color:#444;line-height:1.6;margin-bottom:0.5rem;}
+
 /* ——— COMMENTO FORM ——— */
 .commento-form{margin-top:1rem;background:var(--verde-pale);border-radius:8px;padding:1rem;}
 .commento-form textarea{width:100%;padding:0.6rem;border:1.5px solid var(--gray-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;resize:vertical;min-height:70px;outline:none;}
@@ -208,7 +221,8 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 
   <div class="nav-bar">
     <button class="nav-btn active" onclick="showView('partite',this)">⚡ Partite</button>
-    <button class="nav-btn last-main" onclick="showView('dopocena',this)">🍽️ Dopo partita</button>
+    <button class="nav-btn" onclick="showView('dopocena',this)">🍽️ Dopo partita</button>
+    <button class="nav-btn last-main" onclick="showView('giocatori',this)">👥 Giocatori</button>
     <div class="nav-sep"></div>
     <div id="nav-auth"></div>
   </div>
@@ -229,6 +243,12 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
       <div class="sec-title">Dopo Partita</div>
     </div>
     <div id="list-ristoranti"><div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nessuna cena ancora</div><div class="empty-sub">L'admin inserirà i ristoranti dopo ogni serata</div></div></div>
+  </div>
+
+  <!-- ===== VISTA GIOCATORI ===== -->
+  <div class="view" id="view-giocatori">
+    <div class="sec-head"><div class="sec-title">I Giocatori</div></div>
+    <div id="list-giocatori"><div class="empty"><div class="empty-icon">👥</div><div class="empty-title">Caricamento...</div></div></div>
   </div>
 
   <!-- ===== LOGIN ===== -->
@@ -261,6 +281,11 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
         <div class="admin-card-icon">📋</div>
         <div class="admin-card-title">Gestisci serate</div>
         <div class="admin-card-sub">Modifica o elimina serate esistenti</div>
+      </div>
+      <div class="admin-card" onclick="showAdminSection('profili')">
+        <div class="admin-card-icon">🪪</div>
+        <div class="admin-card-title">Profili giocatori</div>
+        <div class="admin-card-sub">Foto, nome di battaglia, caratteristiche, pala</div>
       </div>
       <div class="admin-card" onclick="showAdminSection('giocatori')">
         <div class="admin-card-icon">👥</div>
@@ -311,6 +336,7 @@ function showView(id, btn) {
   currentView = id;
   if (id === 'partite') loadPartite();
   if (id === 'dopocena') loadRistoranti();
+  if (id === 'giocatori') loadGiocatori();
   if (id === 'admin') renderAdminHome();
 }
 
@@ -437,6 +463,28 @@ async function loadPartite() {
   }
   el.innerHTML = html;
   serate.forEach(s => renderGallery(s.id));
+}
+
+/* ——— LOAD GIOCATORI ——— */
+async function loadGiocatori() {
+  const el = document.getElementById('list-giocatori');
+  const { data: giocatori } = await sb.from('giocatori').select('*').order('nome');
+  if (!giocatori || !giocatori.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">Nessun giocatore ancora</div></div>';
+    return;
+  }
+  el.innerHTML = `<div class="giocatori-grid">${giocatori.map(g => `
+    <div class="giocatore-card">
+      ${g.foto_url
+        ? `<img class="giocatore-foto" src="${g.foto_url}" alt="${g.nome_battaglia||g.nome}"/>`
+        : `<div class="giocatore-foto-placeholder">🏓</div>`}
+      <div class="giocatore-body">
+        <div class="giocatore-nome-battaglia">${g.nome_battaglia || g.nome}</div>
+        ${g.nome_vero ? `<div class="giocatore-nome-vero">${g.nome_vero}</div>` : ''}
+        ${g.caratteristiche ? `<div class="giocatore-caratteristiche">${g.caratteristiche}</div>` : ''}
+        ${g.pala_preferita ? `<div class="giocatore-pala">🏓 Pala preferita: <strong>${g.pala_preferita}</strong></div>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
 }
 
 /* ——— LOAD RISTORANTI ——— */
@@ -693,6 +741,7 @@ function showAdminSection(sec) {
   const el = document.getElementById('admin-section');
   if (sec === 'nuova-serata') el.innerHTML = formNuovaSerata();
   if (sec === 'giocatori')    el.innerHTML = formGiocatori();
+  if (sec === 'profili')      loadAdminProfili();
   if (sec === 'gestione-serate') loadGestioneSerate();
   if (sec === 'commenti') loadModCommenti();
 }
@@ -962,6 +1011,36 @@ async function deleteSerata(id) {
   await sb.from('serate').delete().eq('id',id);
   toast('Serata eliminata.');
   loadGestioneSerate();
+}
+
+async function loadAdminProfili() {
+  const el = document.getElementById('admin-section');
+  el.innerHTML = '<div class="form-section"><h3>🪪 Profili giocatori</h3><div id="profili-list">Caricamento...</div></div>';
+  const { data: giocatori } = await sb.from('giocatori').select('*').order('nome');
+  if (!giocatori || !giocatori.length) { document.getElementById('profili-list').innerHTML = 'Nessun giocatore.'; return; }
+  document.getElementById('profili-list').innerHTML = giocatori.map(g => `
+    <div class="form-section" style="margin-bottom:1rem" id="profilo-${g.id}">
+      <h4 style="color:var(--verde);margin-bottom:0.8rem">👤 ${g.nome}</h4>
+      <div class="form-field"><label>Nome vero</label><input type="text" id="pv-nomevero-${g.id}" value="${g.nome_vero||''}"/></div>
+      <div class="form-field"><label>Nome di battaglia</label><input type="text" id="pv-battaglia-${g.id}" value="${g.nome_battaglia||''}"/></div>
+      <div class="form-field"><label>Caratteristiche</label><textarea id="pv-car-${g.id}" style="width:100%;padding:0.5rem;border:1.5px solid var(--gray-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;resize:vertical;min-height:70px">${g.caratteristiche||''}</textarea></div>
+      <div class="form-field"><label>Pala preferita</label><input type="text" id="pv-pala-${g.id}" value="${g.pala_preferita||''}"/></div>
+      <div class="form-field"><label>URL foto</label><input type="text" id="pv-foto-${g.id}" value="${g.foto_url||''}" placeholder="https://..."/></div>
+      <button class="btn-save" onclick="saveProfilo('${g.id}')">Salva</button>
+      <div id="pv-msg-${g.id}"></div>
+    </div>`).join('');
+}
+
+async function saveProfilo(id) {
+  const payload = {
+    nome_vero:       document.getElementById('pv-nomevero-'+id).value,
+    nome_battaglia:  document.getElementById('pv-battaglia-'+id).value,
+    caratteristiche: document.getElementById('pv-car-'+id).value,
+    pala_preferita:  document.getElementById('pv-pala-'+id).value,
+    foto_url:        document.getElementById('pv-foto-'+id).value,
+  };
+  const { error } = await sb.from('giocatori').update(payload).eq('id', id);
+  showMsg('pv-msg-'+id, error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
 }
 
 function formGiocatori() {
