@@ -1025,7 +1025,12 @@ async function loadAdminProfili() {
       <div class="form-field"><label>Nome di battaglia</label><input type="text" id="pv-battaglia-${g.id}" value="${g.nome_battaglia||''}"/></div>
       <div class="form-field"><label>Caratteristiche</label><textarea id="pv-car-${g.id}" style="width:100%;padding:0.5rem;border:1.5px solid var(--gray-light);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;resize:vertical;min-height:70px">${g.caratteristiche||''}</textarea></div>
       <div class="form-field"><label>Pala preferita</label><input type="text" id="pv-pala-${g.id}" value="${g.pala_preferita||''}"/></div>
-      <div class="form-field"><label>URL foto</label><input type="text" id="pv-foto-${g.id}" value="${g.foto_url||''}" placeholder="https://..."/></div>
+      <div class="form-field"><label>Foto</label>
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.3rem">
+          ${g.foto_url ? `<img src="${g.foto_url}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--verde)" id="pv-preview-${g.id}"/>` : `<div style="width:60px;height:60px;border-radius:50%;background:var(--verde-pale);display:flex;align-items:center;justify-content:center;font-size:1.5rem" id="pv-preview-${g.id}">🏓</div>`}
+          <button class="btn-secondary" style="padding:0.4rem 0.9rem;font-size:0.82rem" onclick="uploadFotoGiocatore('${g.id}')">📷 Carica foto</button>
+        </div>
+      </div>
       <button class="btn-save" onclick="saveProfilo('${g.id}')">Salva</button>
       <div id="pv-msg-${g.id}"></div>
     </div>`).join('');
@@ -1037,7 +1042,6 @@ async function saveProfilo(id) {
     nome_battaglia:  document.getElementById('pv-battaglia-'+id).value,
     caratteristiche: document.getElementById('pv-car-'+id).value,
     pala_preferita:  document.getElementById('pv-pala-'+id).value,
-    foto_url:        document.getElementById('pv-foto-'+id).value,
   };
   const { error } = await sb.from('giocatori').update(payload).eq('id', id);
   showMsg('pv-msg-'+id, error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
@@ -1128,6 +1132,32 @@ async function delCommentoRist(id) {
 }
 
 /* ——— FOTO (Supabase Storage) ——— */
+function uploadFotoGiocatore(giocatoreId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    toast('Caricamento foto...');
+    let fileToUpload = f;
+    let ext = f.name.split('.').pop().toLowerCase();
+    if (ext === 'heic' || ext === 'heif') {
+      try { fileToUpload = await convertToJpeg(f); ext = 'jpg'; } catch(err) { toast('Errore: '+err.message); return; }
+    }
+    const path = `giocatori/${giocatoreId}.${ext}`;
+    await sb.storage.from('foto-serate').remove([path]);
+    const { error } = await sb.storage.from('foto-serate').upload(path, fileToUpload, { cacheControl: '3600', upsert: true });
+    if (error) { toast('Errore: '+error.message); return; }
+    const url = sb.storage.from('foto-serate').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
+    await sb.from('giocatori').update({ foto_url: url }).eq('id', giocatoreId);
+    const preview = document.getElementById('pv-preview-'+giocatoreId);
+    if (preview) { preview.outerHTML = `<img src="${url}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--verde)" id="pv-preview-${giocatoreId}"/>`; }
+    toast('Foto aggiornata! 📸');
+  };
+  input.click();
+}
+
 function triggerUpload(id) {
   if (!currentUser || currentUser.ruolo !== 'admin') { toast('Solo l\'admin può caricare foto.'); return; }
   currentGallery = id;
