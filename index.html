@@ -79,6 +79,9 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 .commento{font-size:0.92rem;line-height:1.7;color:#333;border-left:3px solid var(--gold);padding-left:1rem;font-style:italic;margin-bottom:0.8rem;}
 .commento-author{font-size:0.75rem;color:var(--gray);margin-top:0.3rem;font-style:normal;}
 .commento-meta{font-size:0.72rem;color:var(--gray);margin-top:0.2rem;opacity:0.8;}
+.commento-header{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;}
+.avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--gold-light);flex-shrink:0;}
+.avatar-placeholder{width:28px;height:28px;border-radius:50%;background:var(--verde);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0;border:1.5px solid var(--gold-light);}
 .commento-reply-btn{font-size:0.72rem;color:var(--verde);background:none;border:none;cursor:pointer;padding:0;margin-top:0.3rem;text-decoration:underline;}
 .commento-reply{margin-left:1.5rem;border-left:2px solid var(--gold-light);padding-left:0.8rem;margin-top:0.5rem;}
 .reply-form{margin-left:1.5rem;margin-top:0.4rem;padding-left:0.8rem;border-left:2px solid var(--verde);}
@@ -409,7 +412,7 @@ async function loadPartite() {
   let html = '';
   for (const s of serate) {
     const { data: partite } = await sb.from('partite').select('*').eq('serata_id', s.id);
-    const { data: commenti } = await sb.from('commenti_partita').select('*, giocatori(nome)').eq('serata_id', s.id).order('created_at');
+    const { data: commenti } = await sb.from('commenti_partita').select('*, giocatori(nome, foto_url)').eq('serata_id', s.id).order('created_at');
     const p = partite && partite[0];
     html += `<div class="card">
       <div class="card-hd">
@@ -435,9 +438,8 @@ async function loadPartite() {
       const replies = commenti.filter(c => c.parent_id);
       topLevel.forEach(c => {
         html += `<div class="commento">
+          <div class="commento-header">${avatarHtml(c.giocatori)}<strong style="font-size:0.85rem">${c.giocatori?.nome || 'Anonimo'}</strong><span class="commento-meta" style="margin:0">${formatDateTime(c.created_at)}</span></div>
           ${c.testo}
-          <div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div>
-          <div class="commento-meta">${formatDateTime(c.created_at)}</div>
           ${currentUser ? `<button class="commento-reply-btn" onclick="toggleReplyForm('${c.id}')">↩ Rispondi</button>` : ''}
           <div id="reply-form-${c.id}" style="display:none" class="reply-form">
             <textarea id="reply-ta-${c.id}" placeholder="Scrivi una risposta..."></textarea>
@@ -448,9 +450,9 @@ async function loadPartite() {
           </div>
           ${replies.filter(r => r.parent_id === c.id).map(r => `
             <div class="commento-reply">
-              <div class="commento" style="margin-bottom:0">${r.testo}
-                <div class="commento-author">— ${r.giocatori?.nome || 'Anonimo'}</div>
-                <div class="commento-meta">${formatDateTime(r.created_at)}</div>
+              <div class="commento" style="margin-bottom:0">
+                <div class="commento-header">${avatarHtml(r.giocatori)}<strong style="font-size:0.85rem">${r.giocatori?.nome || 'Anonimo'}</strong><span class="commento-meta" style="margin:0">${formatDateTime(r.created_at)}</span></div>
+                ${r.testo}
               </div>
             </div>`).join('')}
         </div>`;
@@ -515,7 +517,7 @@ async function loadRistoranti() {
     if (!rlist || rlist.length === 0) continue;
     const r = rlist[0];
     const { data: vals } = await sb.from('valutazioni').select('*, giocatori(nome)').eq('ristorante_id', r.id);
-    const { data: commenti } = await sb.from('commenti_ristorante').select('*, giocatori(nome)').eq('ristorante_id', r.id).order('created_at');
+    const { data: commenti } = await sb.from('commenti_ristorante').select('*, giocatori(nome, foto_url)').eq('ristorante_id', r.id).order('created_at');
     const avgVal = campo => {
       if (!vals || !vals.length) return null;
       const v = vals.filter(x => x[campo] != null);
@@ -557,9 +559,8 @@ async function loadRistoranti() {
       const replies = commenti.filter(c => c.parent_id);
       topLevel.forEach(c => {
         html += `<div class="commento">
+          <div class="commento-header">${avatarHtml(c.giocatori)}<strong style="font-size:0.85rem">${c.giocatori?.nome || 'Anonimo'}</strong><span class="commento-meta" style="margin:0">${formatDateTime(c.created_at)}</span></div>
           ${c.testo}
-          <div class="commento-author">— ${c.giocatori?.nome || 'Anonimo'}</div>
-          <div class="commento-meta">${formatDateTime(c.created_at)}</div>
           ${currentUser ? `<button class="commento-reply-btn" onclick="toggleReplyForm('rist-${c.id}')">↩ Rispondi</button>` : ''}
           <div id="reply-form-rist-${c.id}" style="display:none" class="reply-form">
             <textarea id="reply-ta-rist-${c.id}" placeholder="Scrivi una risposta..."></textarea>
@@ -570,9 +571,9 @@ async function loadRistoranti() {
           </div>
           ${replies.filter(rep => rep.parent_id === c.id).map(rep => `
             <div class="commento-reply">
-              <div class="commento" style="margin-bottom:0">${rep.testo}
-                <div class="commento-author">— ${rep.giocatori?.nome || 'Anonimo'}</div>
-                <div class="commento-meta">${formatDateTime(rep.created_at)}</div>
+              <div class="commento" style="margin-bottom:0">
+                <div class="commento-header">${avatarHtml(rep.giocatori)}<strong style="font-size:0.85rem">${rep.giocatori?.nome || 'Anonimo'}</strong><span class="commento-meta" style="margin:0">${formatDateTime(rep.created_at)}</span></div>
+                ${rep.testo}
               </div>
             </div>`).join('')}
         </div>`;
@@ -1170,7 +1171,18 @@ function uploadFotoGiocatore(giocatoreId) {
       document.getElementById('crop-modal').classList.add('open');
       if (_cropper) { _cropper.destroy(); _cropper = null; }
       img.onload = () => {
-        _cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1, guides: true, autoCropArea: 0.8 });
+        _cropper = new Cropper(img, {
+          aspectRatio: 1,
+          viewMode: 1,
+          dragMode: 'move',
+          cropBoxMovable: false,
+          cropBoxResizable: false,
+          guides: false,
+          center: false,
+          highlight: false,
+          autoCropArea: 0.85,
+          background: false,
+        });
       };
     };
     reader.readAsDataURL(f);
@@ -1305,6 +1317,12 @@ function formatData(d) {
   if (!d) return '';
   const dt = new Date(d+'T12:00:00');
   return dt.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+function avatarHtml(g) {
+  if (g?.foto_url) return `<img class="avatar" src="${g.foto_url}" alt="${g.nome||''}"/>`;
+  const ini = (g?.nome||'?').charAt(0).toUpperCase();
+  return `<span class="avatar-placeholder">${ini}</span>`;
 }
 
 function formatDateTime(ts) {
