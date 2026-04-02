@@ -181,6 +181,12 @@ main{max-width:880px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
 .giocatore-nome-vero{font-size:0.82rem;color:var(--gray);margin-bottom:0.8rem;}
 .giocatore-tag{display:inline-block;background:var(--verde-pale);color:var(--verde);font-size:0.75rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:20px;margin-right:0.3rem;margin-bottom:0.3rem;}
 .giocatore-pala{margin-top:0.8rem;font-size:0.85rem;color:var(--gray-dark);border-top:1px solid var(--gray-light);padding-top:0.8rem;}
+.voti-toggle{font-size:0.78rem;color:var(--verde);background:none;border:none;cursor:pointer;padding:0.3rem 0;text-decoration:underline;margin-top:0.5rem;display:block;}
+.voti-dettaglio{display:none;margin-top:0.6rem;}
+.voti-row{display:flex;align-items:center;gap:0.6rem;padding:0.4rem 0;border-bottom:1px solid var(--gray-light);font-size:0.83rem;}
+.voti-row:last-child{border-bottom:none;}
+.voti-nome{min-width:70px;font-weight:600;color:var(--gray-dark);}
+.voti-chip{background:var(--verde-pale);color:var(--verde);font-size:0.72rem;font-weight:600;padding:0.15rem 0.45rem;border-radius:10px;white-space:nowrap;}
 .giocatore-caratteristiche{font-size:0.88rem;color:#444;line-height:1.6;margin-bottom:0.5rem;}
 
 /* ——— COMMENTO FORM ——— */
@@ -553,6 +559,19 @@ async function loadRistoranti() {
       if (pre) html += valCard('💶 Prezzo', pre);
       if (ser) html += valCard('🤵 Servizio', ser);
       html += `</div>`;
+      if (vals && vals.length) {
+        const detId = 'voti-det-'+r.id;
+        html += `<button class="voti-toggle" onclick="toggleVotiDettaglio('${detId}')">▸ Vedi voti singoli</button>
+        <div class="voti-dettaglio" id="${detId}">
+          ${vals.map(v => `<div class="voti-row">
+            <span class="voti-nome">${v.giocatori?.nome||'–'}</span>
+            ${v.location!=null?`<span class="voti-chip">📍 ${v.location}</span>`:''}
+            ${v.cibo!=null?`<span class="voti-chip">🍴 ${v.cibo}</span>`:''}
+            ${v.prezzo!=null?`<span class="voti-chip">💶 ${v.prezzo}</span>`:''}
+            ${v.servizio!=null?`<span class="voti-chip">🤵 ${v.servizio}</span>`:''}
+          </div>`).join('')}
+        </div>`;
+      }
     }
     if (commenti && commenti.length) {
       html += `<div class="divider"></div><div class="lbl">Commenti</div>`;
@@ -731,6 +750,18 @@ async function addCommento(tipo, id, textareaId, parentId) {
     loadRistoranti();
   }
   toast('Commento pubblicato! 💬');
+}
+
+function toggleVotiDettaglio(id) {
+  const el = document.getElementById(id);
+  const btn = el.previousElementSibling;
+  if (el.style.display === 'block') {
+    el.style.display = 'none';
+    btn.textContent = btn.textContent.replace('▾','▸');
+  } else {
+    el.style.display = 'block';
+    btn.textContent = btn.textContent.replace('▸','▾');
+  }
 }
 
 function toggleReplyForm(commentoId) {
