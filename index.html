@@ -534,6 +534,7 @@ async function loadRistoranti() {
       { key: 'menu_antipasto',  label: '🥗 Antipasto' },
       { key: 'menu_primo',      label: '🍝 Primo' },
       { key: 'menu_secondo',    label: '🥩 Secondo' },
+      { key: 'menu_contorni',   label: '🥦 Contorni' },
       { key: 'menu_altro',      label: '🍮 Altro' },
       { key: 'menu_bevande',    label: '🍷 Bevande' },
       { key: 'menu_dolci',      label: '🍰 Dolci' },
@@ -930,6 +931,7 @@ async function editSerata(serataId) {
       <div class="form-field"><label>Primo</label><input type="text" id="er-pri" value="${r?.menu_primo||''}"/></div>
       <div class="form-field"><label>Secondo</label><input type="text" id="er-sec" value="${r?.menu_secondo||''}"/></div>
       <div class="form-field"><label>Altro</label><input type="text" id="er-alt" value="${r?.menu_altro||''}"/></div>
+      <div class="form-field"><label>Contorni</label><input type="text" id="er-con" value="${r?.menu_contorni||''}"/></div>
       <div class="form-field"><label>Bevande</label><input type="text" id="er-bev" value="${r?.menu_bevande||''}"/></div>
       <div class="form-field"><label>Dolci</label><input type="text" id="er-dol" value="${r?.menu_dolci||''}"/></div>
       <div class="form-field"><label>Fuori menù (x Samu)</label><input type="text" id="er-fuo" value="${r?.menu_fuori_menu||''}"/></div>
@@ -1005,6 +1007,7 @@ async function updateRistorante(serataId, ristId) {
     menu_primo: document.getElementById('er-pri').value,
     menu_secondo: document.getElementById('er-sec').value,
     menu_altro: document.getElementById('er-alt').value,
+    menu_contorni: document.getElementById('er-con').value,
     menu_bevande: document.getElementById('er-bev').value,
     menu_dolci: document.getElementById('er-dol').value,
     menu_fuori_menu: document.getElementById('er-fuo').value
