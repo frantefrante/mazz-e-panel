@@ -9,7 +9,7 @@
 }
 *{box-sizing:border-box}
 body{
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Merriweather', Georgia, 'Times New Roman', serif;
   background: linear-gradient(0deg, var(--bg), #fff 60%);
   color:#222;
   margin:0;
@@ -28,9 +28,24 @@ body{
 
 .main-grid{display:grid;grid-template-columns:1fr 300px;gap:20px;padding-top:18px}
 
-.evening-card{background:var(--paper);padding:18px;border-radius:10px;border:1px solid var(--card-border);box-shadow:0 6px 18px rgba(50,40,30,0.06)}
-.evening-title{font-family: 'Georgia', serif;font-size:22px;margin:6px 0 12px;color:#2b2b2b}
-.evening-photo img{width:100%;border-radius:8px;display:block}
+/* Evening card with scrapbook feel */
+.evening-card{background:transparent;padding:10px;border-radius:10px}
+.evening-card.scrapbook .polaroid{width:100%;max-width:720px;margin:0 auto;position:relative;transform:rotate(-2deg);}
+.polaroid img{width:100%;display:block;border-radius:6px;border:8px solid #fff;background:#fff;box-shadow:0 12px 30px rgba(30,20,10,0.18)}
+.polaroid:before{content:'';position:absolute;left:40%;top:-14px;width:90px;height:20px;background:linear-gradient(90deg,#f4d9c2,#f6e6d7);transform:rotate(-6deg);box-shadow:0 4px 8px rgba(0,0,0,0.08);border-radius:3px}
+.polaroid-caption{display:block;text-align:center;padding:10px 6px;font-family:'Patrick Hand',sans-serif;font-size:20px;color:#3b3b3b}
+
+/* Prominent comments as sticky notes */
+.comments-block.prominent{margin-top:18px;padding:8px}
+.sticky-list{display:flex;flex-direction:column;gap:12px}
+.sticky{background:#fff8c8;border:1px solid #f0e0b5;padding:12px;border-radius:6px;box-shadow:0 8px 18px rgba(30,20,10,0.08);font-family:'Patrick Hand',sans-serif;font-size:16px}
+.sticky:before{content:'';position:absolute;}
+.comment .meta{font-size:13px;color:var(--muted);margin-bottom:6px}
+.comment p{margin:0}
+.comment.highlight{background:linear-gradient(90deg,#fffce6,#fffdf9);padding:14px;border-radius:6px}
+
+.match-block{margin-top:18px;padding:12px;background:rgba(255,255,255,0.9);border-radius:8px;border:1px solid #f0e6dd}
+.polaroid-small img{width:100%;border-radius:6px;border:6px solid #fff;box-shadow:0 8px 18px rgba(0,0,0,0.08)}
 
 .comments-block{margin-top:16px;padding:12px;background:linear-gradient(180deg,#fff,#fffaf2);border-radius:8px;border:1px dashed #f0e0c8}
 .comments-block h3{margin:0 0 10px;font-size:18px;color:var(--accent)}
