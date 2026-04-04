@@ -1,0 +1,59 @@
+/* Mockup stylesheet: scrapbook / taccuino mood */
+:root{
+  --bg:#fbf9f3;
+  --paper:#fffaf0;
+  --accent:#d67c3c;
+  --muted:#6b6b6b;
+  --card-border: #e6d8c8;
+  --note:#fff3d9;
+}
+*{box-sizing:border-box}
+body{
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: linear-gradient(0deg, var(--bg), #fff 60%);
+  color:#222;
+  margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.container{max-width:980px;margin:0 auto;padding:18px}
+.site-header{padding:10px 0}
+.header-inner{display:flex;align-items:center;gap:12px}
+.logo{height:48px}
+.site-title{font-size:18px;margin:0;color:var(--accent)}
+
+.main-nav{background:transparent;padding:8px 18px;border-bottom:1px dashed var(--card-border)}
+.nav-list{list-style:none;display:flex;gap:18px;margin:0;padding:0}
+.nav-item{padding:6px 10px;border-radius:6px;color:var(--muted);cursor:pointer}
+.nav-item.active{background:var(--note);border:1px solid var(--card-border);color:#000}
+
+.main-grid{display:grid;grid-template-columns:1fr 300px;gap:20px;padding-top:18px}
+
+.evening-card{background:var(--paper);padding:18px;border-radius:10px;border:1px solid var(--card-border);box-shadow:0 6px 18px rgba(50,40,30,0.06)}
+.evening-title{font-family: 'Georgia', serif;font-size:22px;margin:6px 0 12px;color:#2b2b2b}
+.evening-photo img{width:100%;border-radius:8px;display:block}
+
+.comments-block{margin-top:16px;padding:12px;background:linear-gradient(180deg,#fff,#fffaf2);border-radius:8px;border:1px dashed #f0e0c8}
+.comments-block h3{margin:0 0 10px;font-size:18px;color:var(--accent)}
+.comment{padding:10px;border-bottom:1px dotted #eee}
+.comment:last-child{border-bottom:0}
+.comment .meta{font-size:13px;color:var(--muted);margin-bottom:6px}
+.comment p{margin:0;color:#222}
+.comment.highlight{background:linear-gradient(90deg,#fff8f0,#fffdfb);padding:12px;border-radius:6px}
+
+.match-block{margin-top:16px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f0e6dd}
+.match-block h4{margin:0 0 8px}
+.match-meta{color:var(--muted);font-size:13px;margin-bottom:8px}
+.match-photo img{width:100%;border-radius:6px}
+.match-details{margin-top:8px}
+.score{font-weight:700;color:#111}
+.match-comments{color:var(--muted)}
+
+.side-note{background:var(--note);padding:14px;border-radius:8px;border:1px solid var(--card-border)}
+.side-note h4{margin-top:0}
+
+.site-footer{padding:18px;color:var(--muted);font-size:13px;text-align:center}
+
+@media(max-width:880px){
+  .main-grid{grid-template-columns:1fr}
+  .side-note{order:2}
+}
