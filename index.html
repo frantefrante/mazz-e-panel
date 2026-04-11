@@ -3266,7 +3266,10 @@ async function delValutazione(id) {
 
 async function deleteSerata(id) {
   if (!confirm('Eliminare questa serata e tutti i dati collegati?')) return;
-  await sb.from('serate').delete().eq('id',id);
+  // Scollega sessioni protagonisti prima (foreign key)
+  await sb.from('protagonisti_sessione').update({ serata_id: null }).eq('serata_id', id);
+  const { error } = await sb.from('serate').delete().eq('id', id);
+  if (error) { toast('Errore: ' + error.message); return; }
   toast('Serata eliminata.');
   loadGestioneSerate();
 }
