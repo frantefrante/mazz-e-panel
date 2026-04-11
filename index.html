@@ -294,6 +294,86 @@ main{
 
 /* HERO */
 .hero-card .card-body{padding-bottom:1.65rem;}
+.hero-banner{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+  padding:1.35rem 1.5rem 1rem 42px;
+  border-bottom:1px solid var(--paper-line);
+}
+.hero-notebook{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.hero-star-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--verde);
+  color:#fff;
+  font-size:.68rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  border-radius:999px;
+  padding:4px 12px;
+  align-self:flex-start;
+}
+.hero-dateloc{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.hero-titolo{
+  font-family:'Patrick Hand',cursive;
+  font-size:clamp(1.4rem,3vw,2rem);
+  line-height:1.15;
+  font-weight:400;
+  color:#1f1a14;
+  margin:0;
+}
+.hero-teaser{
+  font-size:.82rem;
+  color:var(--muted);
+  flex:1;
+  line-height:1.5;
+}
+.hero-banner-stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  font-size:.78rem;
+  font-weight:600;
+  color:var(--muted);
+}
+.hero-banner-stats span{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.hero-quote{
+  background:var(--yellow);
+  color:#49390d;
+  padding:8px 14px;
+  border-radius:8px;
+  font-size:.8rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.hero-collage{
+  width:240px;
+  min-width:180px;
+  height:278px;
+  flex-shrink:0;
+  position:relative;
+}
 .home-layout{
   display:grid;
   grid-template-columns:1fr 300px;
@@ -750,7 +830,7 @@ main{
   align-items:flex-start;
 }
 .match-card-inner .match-content{ flex:1; min-width:0; }
-.match-card-inner .photo-collage{ width:180px; min-width:140px; height:220px; }
+.photo-collage-below{ width:100%; min-width:0; height:320px; margin-top:20px; }
 /* player picker */
 .player-picker{
   display:grid;
@@ -1667,12 +1747,16 @@ main{
 .err-msg{color:var(--red);font-size:.85rem;margin-top:.8rem;}
 
 @media(max-width:1080px){
-  .home-layout{grid-template-columns:1fr;}
-  .home-side{position:static;grid-template-columns:1fr 1fr;}
+  .home-layout{grid-template-columns:1fr;grid-template-rows:auto auto;}
+  .home-main{order:2;}
+  .home-side{order:1;display:flex;flex-direction:row;overflow-x:auto;gap:12px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .home-side::-webkit-scrollbar{display:none;}
+  .home-side .sidebar-card{min-width:260px;flex-shrink:0;}
+  .hero-banner{flex-direction:column;}
+  .hero-collage{width:100%;min-width:0;height:240px;}
   .hero-main{flex-direction:column;}
   .photo-collage{width:100%;min-width:0;height:220px;}
   .match-card-inner{flex-direction:column;}
-  .match-card-inner .photo-collage{width:100%;min-width:0;height:180px;}
   .team-names-row,.team-vs-row{grid-template-columns:1fr 90px 1fr;gap:8px;}
 }
 @media(max-width:760px){
@@ -1691,8 +1775,9 @@ main{
   .comments-header{flex-direction:column;}
   .comments-pills{justify-content:flex-start;}
   .comments-title{font-size:2.2rem;}
-  .home-side{grid-template-columns:1fr;}
-  .home-layout{grid-template-columns:1fr;}
+  .home-side .sidebar-card{min-width:220px;}
+  .team-names-row,.team-vs-row{grid-template-columns:1fr 70px 1fr;gap:6px;}
+  .player-picker{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));}
 }
 
 </style>
@@ -2041,36 +2126,46 @@ async function loadPartite() {
     html += `<div class="card ${isHero ? 'hero-card' : 'match-card'}">
       <div class="holes"><span></span><span></span><span></span><span></span><span></span><span></span></div>`;
 
-    if (isHero) {
-      html += `
-      <div class="card-hd">
-        <div>
-          <span class="card-badge">Ultima partita</span>
-          <div class="card-date">${formatData(s.data)}</div>
-        </div>
-        ${s.titolo ? `<div class="card-badge">${s.titolo}</div>` : ''}
-      </div>
-      <div class="card-body">
-        <div class="match-card-inner">
-          <div class="match-content">
-            ${renderMatchSection(p, allGiocatori, s.id, commenti, true)}
-          </div>
-          <div class="photo-collage" id="pc-${s.id}"></div>
-        </div>`;
-    } else {
-      html += `
-      <div class="card-hd">
-        <div><div class="card-date">${formatData(s.data)}</div></div>
-        ${s.titolo ? `<div class="card-badge">${s.titolo}</div>` : ''}
-      </div>
-      <div class="card-body">
-        <div class="match-card-inner">
-          <div class="match-content">
-            ${renderMatchSection(p, allGiocatori, s.id, commenti, false)}
-          </div>
-          <div class="photo-collage" id="pc-${s.id}"></div>
-        </div>`;
+    // Calcola MVP dalla sessione protagonisti collegata
+    const sessione = (sessioni || []).find(sess => sess.serata_id === s.id);
+    let mvpNome = null;
+    if (sessione) {
+      const votiSess = (allVotiProt || []).filter(v => v.sessione_id === sessione.id);
+      let gids = []; try { gids = JSON.parse(sessione.giocatori_ids || '[]'); } catch(e) {}
+      if (gids.length && votiSess.length) {
+        const medie = gids.map(gid => {
+          const voti = votiSess.filter(v => v.votato_id === gid).map(v => v.voto);
+          return { gid, media: voti.length ? voti.reduce((a,b)=>a+b,0)/voti.length : 0 };
+        });
+        const best = medie.sort((a,b)=>b.media-a.media)[0];
+        if (best && best.media > 0) {
+          const g = (allGiocatori||[]).find(x=>x.id===best.gid);
+          mvpNome = g?.nome_battaglia || g?.nome || null;
+        }
+      }
     }
+    const luogo = s.luogo ? `&nbsp;|&nbsp; 📍 ${s.luogo}` : '';
+    html += `
+    <div class="hero-banner">
+      <div class="hero-notebook">
+        ${isHero ? `<span class="hero-star-badge">★ Ultima serata</span>` : ''}
+        <div class="hero-dateloc">${formatData(s.data)}${luogo}</div>
+        <div class="hero-titolo">${titoloHero}</div>
+        <div class="hero-teaser">${teaser}</div>
+        <div class="hero-banner-stats">
+          <span style="cursor:pointer" onclick="document.getElementById('comments-${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${commentiTop.length} commenti</span>
+          <span style="cursor:pointer" onclick="openGallery('${s.id}')">📷 Foto della serata</span>
+          ${mvpNome ? `<span>👑 MVP: ${mvpNome}</span>` : ''}
+        </div>
+      </div>
+      <div class="hero-collage photo-collage" id="pc-${s.id}"></div>
+    </div>
+    <div class="card-body">
+      <div class="match-card-inner">
+        <div class="match-content">
+          ${renderMatchSection(p, allGiocatori, s.id, commenti, false)}
+        </div>
+      </div>`;
 
     if (commentiTop.length) {
       html += `<div class="comments-section" id="comments-${s.id}">

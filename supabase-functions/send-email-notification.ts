@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Mazz e Panell <onboarding@resend.dev>',
+        from: 'Mazz e Panell <notifiche@mazzepanell.com>',
         to: sub.email,
         subject: title,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:auto">
