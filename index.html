@@ -448,6 +448,60 @@ main{
   color:#6a6053;
   margin-top:2px;
 }
+/* Protagonisti inline nelle card serate passate */
+.prot-serata-section{
+  padding:16px 0 4px;
+  border-top:1.5px solid var(--paper-line);
+  margin-top:16px;
+}
+.prot-serata-label{
+  font-size:.72rem;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+.prot-serata-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+.prot-serata-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:3px;
+}
+.prot-serata-card .protagonist-avatar-wrap{
+  width:52px;
+  height:52px;
+  flex-shrink:0;
+}
+.prot-serata-card .protagonist-avatar-wrap img,
+.prot-serata-card .protagonist-avatar-wrap .avatar-placeholder{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  object-fit:cover;
+  font-size:1.1rem;
+}
+.prot-serata-nome{
+  font-size:.72rem;
+  font-weight:700;
+  line-height:1.2;
+  color:#241d17;
+  margin-top:2px;
+}
+.prot-serata-score{
+  font-size:.78rem;
+  font-weight:800;
+  color:var(--verde);
+}
+@media(max-width:760px){
+  .prot-serata-row{grid-template-columns:repeat(2,1fr);}
+}
 /* Scheda voto protagonisti (per utenti) */
 .prot-vote-card{
   background:linear-gradient(180deg,var(--paper-2),var(--paper));
@@ -667,9 +721,29 @@ main{
   object-fit:cover;
   object-position:center top;
   border-radius:14px;
-  margin-bottom:10px;
+  margin-bottom:6px;
   display:block;
 }
+.team-foto-placeholder{
+  width:100%;
+  aspect-ratio:4/3;
+  background:rgba(0,0,0,.06);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+  margin-bottom:6px;
+}
+.team-names-row,.team-vs-row{
+  display:grid;
+  grid-template-columns:1fr 120px 1fr;
+  gap:14px;
+  align-items:center;
+  margin-bottom:10px;
+}
+.team-vs-row.team-players-row{ align-items:start; }
+.team-names-row .team-tag:last-child{ justify-self:end; }
 .match-card-inner{
   display:flex;
   gap:20px;
@@ -677,6 +751,41 @@ main{
 }
 .match-card-inner .match-content{ flex:1; min-width:0; }
 .match-card-inner .photo-collage{ width:180px; min-width:140px; height:220px; }
+/* player picker */
+.player-picker{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(76px,1fr));
+  gap:8px;
+  margin:10px 0 16px;
+}
+.pp-player{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  padding:8px 4px 6px;
+  border-radius:14px;
+  border:2.5px solid transparent;
+  cursor:pointer;
+  background:rgba(255,255,255,.45);
+  text-align:center;
+  transition:border-color .15s,background .15s;
+  user-select:none;
+}
+.pp-player img,.pp-player .pp-init{
+  width:46px;height:46px;border-radius:50%;object-fit:cover;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#fff;font-size:1rem;background:#c8a96e;
+}
+.pp-player span{ font-size:.72rem;font-weight:700;line-height:1.2; }
+.pp-player.sel-a{ border-color:#2f7a4c;background:#e7f4ea; }
+.pp-player.sel-b{ border-color:#b46420;background:#fff1df; }
+.pp-badge{
+  font-size:.65rem;font-weight:800;letter-spacing:.03em;
+  padding:1px 6px;border-radius:999px;margin-top:2px;
+}
+.pp-badge.a{ background:#2f7a4c;color:#fff; }
+.pp-badge.b{ background:#b46420;color:#fff; }
 .players{
   display:grid;
   gap:10px;
@@ -1564,6 +1673,7 @@ main{
   .photo-collage{width:100%;min-width:0;height:220px;}
   .match-card-inner{flex-direction:column;}
   .match-card-inner .photo-collage{width:100%;min-width:0;height:180px;}
+  .team-names-row,.team-vs-row{grid-template-columns:1fr 90px 1fr;gap:8px;}
 }
 @media(max-width:760px){
   header{padding:1.4rem .8rem .8rem;}
@@ -1800,10 +1910,110 @@ function doLogout() {
 
 /* ——— LOAD PARTITE ——— */
 
+function renderProtagonistiInCard(sessione, allVotiProt, allGiocatori) {
+  if (!sessione) return '';
+  let gids = [];
+  try { gids = JSON.parse(sessione.giocatori_ids || '[]'); } catch(e) {}
+  if (!gids.length) return '';
+
+  const voti = (allVotiProt || []).filter(v => v.sessione_id === sessione.id);
+  const medie = {};
+  gids.forEach(id => {
+    const vG = voti.filter(v => v.giocatore_id === id);
+    medie[id] = vG.length ? vG.reduce((a,v) => a + v.punteggio, 0) / vG.length : null;
+  });
+  const sorted = [...gids].sort((a,b) => (medie[b]??-1) - (medie[a]??-1));
+  const mvpId = sessione.mvp_id || (medie[sorted[0]] !== null ? sorted[0] : null);
+
+  return `<div class="prot-serata-section">
+    <div class="prot-serata-label">🌟 Protagonisti della serata</div>
+    <div class="prot-serata-row">
+      ${sorted.map(gid => {
+        const g = (allGiocatori||[]).find(x => x.id === gid);
+        if (!g) return '';
+        const media = medie[gid];
+        const isMvp = gid === mvpId && media !== null;
+        const pct = media !== null ? Math.round(media * 10) : 0;
+        const barClass = media===null?'':media>=7?'high':media>=4?'mid':'low';
+        return `<div class="prot-serata-card">
+          <div class="protagonist-avatar-wrap">
+            ${g.foto_url ? `<img src="${g.foto_url}" alt="${g.nome_battaglia||g.nome}"/>` : `<span class="avatar-placeholder">${(g.nome_battaglia||g.nome).charAt(0)}</span>`}
+            ${isMvp ? '<div class="protagonist-crown">👑</div>' : ''}
+          </div>
+          <div class="prot-serata-nome">${g.nome_battaglia || g.nome}</div>
+          ${media !== null ? `
+            <div class="prog-bar-wrap" style="width:100%;max-width:80px"><div class="prog-bar ${barClass}" style="width:${pct}%"></div></div>
+            <div class="prot-serata-score">${media.toFixed(1)}</div>` :
+            '<div class="prot-serata-score" style="color:var(--muted)">–</div>'}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderPlayers(idsJson, namesStr, allGiocatori) {
+  let ids = [];
+  try { ids = JSON.parse(idsJson || '[]'); } catch(e) {}
+  if (ids.length) {
+    return ids.map(id => {
+      const g = (allGiocatori || []).find(x => x.id === id);
+      if (!g) return '';
+      return `<div class="player">${avatarHtml(g)}<div><strong>${g.nome_battaglia || g.nome}</strong></div></div>`;
+    }).join('');
+  }
+  return (namesStr || '').split(',').map(n => n.trim()).filter(Boolean)
+    .map(n => `<div class="player">${avatarHtml({nome:n})}<div><strong>${n}</strong></div></div>`).join('');
+}
+
+function renderMatchSection(p, allGiocatori, sid, commenti, isHero) {
+  if (!p) return '<div style="color:var(--muted);padding:.5rem 0">Serata in aggiornamento</div>';
+  const nomeS1 = p.squadra1_nome || 'Squadra A';
+  const nomeS2 = p.squadra2_nome || 'Squadra B';
+  const sets = p.set_dettaglio ? p.set_dettaglio.split('|') : [];
+  const fotoA = p.squadra1_foto_url
+    ? `<img class="team-foto" src="${p.squadra1_foto_url}" alt="${nomeS1}"/>`
+    : `<div class="team-foto-placeholder">🏓</div>`;
+  const fotoB = p.squadra2_foto_url
+    ? `<img class="team-foto" src="${p.squadra2_foto_url}" alt="${nomeS2}"/>`
+    : `<div class="team-foto-placeholder">🏓</div>`;
+  const playersA = renderPlayers(p.squadra1_giocatori_ids, p.squadra1_nomi, allGiocatori);
+  const playersB = renderPlayers(p.squadra2_giocatori_ids, p.squadra2_nomi, allGiocatori);
+
+  return `
+    <div class="team-names-row">
+      <span class="team-tag a">${nomeS1}</span>
+      <div></div>
+      <span class="team-tag b" style="justify-self:end">${nomeS2}</span>
+    </div>
+    <div class="team-vs-row">
+      <div>${fotoA}</div>
+      <div class="score-wrap">
+        <div class="score-main">${p.punteggio_s1||'–'}<small>–</small>${p.punteggio_s2||'–'}</div>
+        <div class="score-note">set vinti</div>
+      </div>
+      <div>${fotoB}</div>
+    </div>
+    <div class="team-vs-row team-players-row">
+      <div class="players">${playersA}</div>
+      <div></div>
+      <div class="players">${playersB}</div>
+    </div>
+    ${sets.length ? `<div class="sets">${sets.map((st,i)=>`<div class="set-chip ${i===0?'won':''}">${st}</div>`).join('')}</div>` : ''}
+    ${isHero ? `<div class="hero-stats" style="margin-top:14px">
+      <span style="cursor:pointer" onclick="document.getElementById('comments-${sid}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${(commenti||[]).length} commenti</span>
+      <span style="cursor:pointer" onclick="openGallery('${sid}')">📷 Foto della serata</span>
+    </div>` : ''}`;
+}
+
 async function loadPartite() {
   const el = document.getElementById('list-partite');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-title">Caricamento...</div></div>';
-  const { data: serate } = await sb.from('serate').select('*').order('data', { ascending: false });
+  const [{ data: serate }, { data: allGiocatori }, { data: sessioni }, { data: allVotiProt }] = await Promise.all([
+    sb.from('serate').select('*').order('data', { ascending: false }),
+    sb.from('giocatori').select('*').order('nome'),
+    sb.from('protagonisti_sessione').select('*').eq('is_active', false),
+    sb.from('protagonisti_voti').select('*').eq('is_spareggio', false)
+  ]);
   if (!serate || serate.length === 0) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🏸</div><div class="empty-title">Nessuna serata ancora</div><div class="empty-sub">L\'admin inserirà le partite dopo ogni serata</div></div>';
     return;
@@ -1811,10 +2021,10 @@ async function loadPartite() {
 
   let html = '';
   const todayIso = new Date().toISOString().split('T')[0];
-  // Prossima partita: serata futura con luogo o orario impostati dall'admin
   const nextSerata = serate.find(x => x.data > todayIso && (x.luogo || x.orario)) || null;
-  // Serate da mostrare: solo quelle passate o di oggi (esclude placeholder futuri senza partita)
   const serateVisibili = serate.filter(s => s.data <= todayIso);
+
+
   let serataIdx = 0;
 
   for (const s of serateVisibili) {
@@ -1832,12 +2042,6 @@ async function loadPartite() {
       <div class="holes"><span></span><span></span><span></span><span></span><span></span><span></span></div>`;
 
     if (isHero) {
-      const s1 = p ? p.squadra1_nomi.split(',').map(n=>n.trim()) : [];
-      const s2 = p ? p.squadra2_nomi.split(',').map(n=>n.trim()) : [];
-      const sets = p && p.set_dettaglio ? p.set_dettaglio.split('|') : [];
-      const nomeS1 = p?.squadra1_nome || 'Squadra A';
-      const nomeS2 = p?.squadra2_nome || 'Squadra B';
-
       html += `
       <div class="card-hd">
         <div>
@@ -1846,82 +2050,26 @@ async function loadPartite() {
         </div>
         ${s.titolo ? `<div class="card-badge">${s.titolo}</div>` : ''}
       </div>
-
       <div class="card-body">
         <div class="match-card-inner">
           <div class="match-content">
-            ${p ? `
-            <div class="match-grid">
-              <article class="team-card">
-                <div class="team-tag a">${nomeS1}</div>
-                ${p.squadra1_foto_url ? `<img class="team-foto" src="${p.squadra1_foto_url}" alt="${nomeS1}"/>` : ''}
-                <div class="players">
-                  ${s1.map(n => `<div class="player">${avatarHtml({nome:n})}<div><strong>${n}</strong></div></div>`).join('')}
-                </div>
-              </article>
-              <div class="score-wrap">
-                <div class="score-main">${p.punteggio_s1||'–'}<small>–</small>${p.punteggio_s2||'–'}</div>
-                <div class="score-note">set vinti</div>
-              </div>
-              <article class="team-card">
-                <div class="team-tag b">${nomeS2}</div>
-                ${p.squadra2_foto_url ? `<img class="team-foto" src="${p.squadra2_foto_url}" alt="${nomeS2}"/>` : ''}
-                <div class="players">
-                  ${s2.map(n => `<div class="player">${avatarHtml({nome:n})}<div><strong>${n}</strong></div></div>`).join('')}
-                </div>
-              </article>
-            </div>
-            ${sets.length ? `<div class="sets">${sets.map((st,i)=>`<div class="set-chip ${i===0?'won':''}">${st}</div>`).join('')}</div>` : ''}
-            <div class="hero-stats" style="margin-top:14px">
-              <span style="cursor:pointer" onclick="document.getElementById('comments-${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${(commenti||[]).length} commenti</span>
-              <span style="cursor:pointer" onclick="openGallery('${s.id}')">📷 Foto della serata</span>
-            </div>` : '<div style="color:var(--muted);padding:1rem 0">Serata in aggiornamento</div>'}
+            ${renderMatchSection(p, allGiocatori, s.id, commenti, true)}
           </div>
           <div class="photo-collage" id="pc-${s.id}"></div>
         </div>`;
     } else {
-      const s1 = p ? p.squadra1_nomi.split(',').map(n=>n.trim()) : [];
-      const s2 = p ? p.squadra2_nomi.split(',').map(n=>n.trim()) : [];
-      const sets = p && p.set_dettaglio ? p.set_dettaglio.split('|') : [];
-      const nomeS1 = p?.squadra1_nome || 'Squadra A';
-      const nomeS2 = p?.squadra2_nome || 'Squadra B';
-
       html += `
       <div class="card-hd">
         <div><div class="card-date">${formatData(s.data)}</div></div>
         ${s.titolo ? `<div class="card-badge">${s.titolo}</div>` : ''}
       </div>
-
       <div class="card-body">
-      <div class="match-card-inner">
-        <div class="match-content">`;
-
-      if (p) {
-        html += `
-        <div class="match-grid">
-          <article class="team-card">
-            <div class="team-tag a">${nomeS1}</div>
-            ${p.squadra1_foto_url ? `<img class="team-foto" src="${p.squadra1_foto_url}" alt="${nomeS1}"/>` : ''}
-            <div class="players">
-              ${s1.map(n => `<div class="player">${avatarHtml({nome:n})}<div><strong>${n}</strong></div></div>`).join('')}
-            </div>
-          </article>
-          <div class="score-wrap">
-            <div class="score-main">${p.punteggio_s1||'–'}<small>–</small>${p.punteggio_s2||'–'}</div>
-            <div class="score-note">set vinti</div>
+        <div class="match-card-inner">
+          <div class="match-content">
+            ${renderMatchSection(p, allGiocatori, s.id, commenti, false)}
           </div>
-          <article class="team-card">
-            <div class="team-tag b">${nomeS2}</div>
-            ${p.squadra2_foto_url ? `<img class="team-foto" src="${p.squadra2_foto_url}" alt="${nomeS2}"/>` : ''}
-            <div class="players">
-              ${s2.map(n => `<div class="player">${avatarHtml({nome:n})}<div><strong>${n}</strong></div></div>`).join('')}
-            </div>
-          </article>
-        </div>
-        ${sets.length ? `<div class="sets">${sets.map((st, idx)=>`<div class="set-chip ${idx===0?'won':''}">${st}</div>`).join('')}</div>` : ''}`;
-      }
-
-      html += `</div><div class="photo-collage" id="pc-${s.id}"></div></div>`;
+          <div class="photo-collage" id="pc-${s.id}"></div>
+        </div>`;
     }
 
     if (commentiTop.length) {
@@ -1974,6 +2122,9 @@ async function loadPartite() {
       </div>`;
     }
 
+    const sessSerata = (sessioni || []).find(ss => ss.serata_id === s.id);
+    const protHtml = !isHero ? renderProtagonistiInCard(sessSerata, allVotiProt, allGiocatori) : '';
+
     html += `
       <div class="divider"></div>
       <div class="hero-gallery-wrap" id="gallery-${s.id}">
@@ -1985,6 +2136,7 @@ async function loadPartite() {
           </button>
         </div>
       </div>
+      ${protHtml}
       </div>
     </div>`;
 
@@ -2408,9 +2560,13 @@ function aggiornaCheckboxProtagonisti() {
 async function avviaSessioneProtagonisti() {
   const checked = Array.from(document.querySelectorAll('#prot-checkboxes input:checked')).map(cb => cb.value);
   if (checked.length !== 4) { showMsg('prot-msg', 'Seleziona esattamente 4 giocatori.', true); return; }
+  // Recupera la serata più recente passata per associarla
+  const todayIso = new Date().toISOString().split('T')[0];
+  const { data: serate } = await sb.from('serate').select('id').lte('data', todayIso).order('data', { ascending: false }).limit(1);
+  const serataId = serate?.[0]?.id || null;
   // Disattiva sessioni precedenti
   await sb.from('protagonisti_sessione').update({ is_active: false }).eq('is_active', true);
-  const { error } = await sb.from('protagonisti_sessione').insert({ giocatori_ids: JSON.stringify(checked), is_active: true });
+  const { error } = await sb.from('protagonisti_sessione').insert({ giocatori_ids: JSON.stringify(checked), is_active: true, serata_id: serataId });
   showMsg('prot-msg', error ? '❌ Errore: ' + error.message : '✅ Sessione avviata!', !!error);
   if (!error) setTimeout(() => loadProtagonistiAdmin(), 600);
 }
@@ -2689,7 +2845,7 @@ function renderAdminHome() {
 
 function showAdminSection(sec) {
   const el = document.getElementById('admin-section');
-  if (sec === 'nuova-serata') el.innerHTML = formNuovaSerata();
+  if (sec === 'nuova-serata') { loadFormNuovaSerata(); return; }
   if (sec === 'giocatori')    el.innerHTML = formGiocatori();
   if (sec === 'profili')      loadAdminProfili();
   if (sec === 'gestione-serate') loadGestioneSerate();
@@ -2698,7 +2854,48 @@ function showAdminSection(sec) {
   if (sec === 'protagonisti-admin') loadProtagonistiAdmin();
 }
 
-function formNuovaSerata() {
+async function loadFormNuovaSerata() {
+  const el = document.getElementById('admin-section');
+  el.innerHTML = '<div style="padding:1rem;color:var(--muted)">Caricamento...</div>';
+  const { data: giocatori } = await sb.from('giocatori').select('*').order('nome');
+  el.innerHTML = formNuovaSerata(giocatori || []);
+}
+
+function togglePickPlayer(el) {
+  const t = el.dataset.team || '';
+  el.classList.remove('sel-a','sel-b');
+  el.querySelector('.pp-badge')?.remove();
+  if (t === '') {
+    el.dataset.team = 'a';
+    el.classList.add('sel-a');
+    el.insertAdjacentHTML('beforeend','<span class="pp-badge a">A</span>');
+  } else if (t === 'a') {
+    el.dataset.team = 'b';
+    el.classList.add('sel-b');
+    el.insertAdjacentHTML('beforeend','<span class="pp-badge b">B</span>');
+  } else {
+    el.dataset.team = '';
+  }
+}
+
+function playerPickerHtml(giocatori, preselA, preselB) {
+  return `<p style="font-size:.82rem;color:var(--gray);margin-bottom:4px">Clicca per assegnare: 🟢 <b>A</b> → 🟠 <b>B</b> → rimuovi.</p>
+  <div class="player-picker">
+    ${giocatori.map(g => {
+      const nome = g.nome_battaglia || g.nome;
+      const inA = (preselA || []).includes(g.id);
+      const inB = (preselB || []).includes(g.id);
+      const cls = inA ? 'sel-a' : inB ? 'sel-b' : '';
+      const badge = inA ? '<span class="pp-badge a">A</span>' : inB ? '<span class="pp-badge b">B</span>' : '';
+      return `<div class="pp-player ${cls}" data-id="${g.id}" data-nome="${nome}" data-team="${inA?'a':inB?'b':''}" onclick="togglePickPlayer(this)">
+        ${g.foto_url ? `<img src="${g.foto_url}" alt="${nome}"/>` : `<div class="pp-init">${nome.charAt(0)}</div>`}
+        <span>${nome}</span>${badge}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function formNuovaSerata(giocatori) {
   return `<div class="form-section">
     <h3>📅 Nuova serata</h3>
     <div class="form-row">
@@ -2706,20 +2903,21 @@ function formNuovaSerata() {
       <div class="form-field"><label>Titolo (opz.)</label><input type="text" id="f-titolo" placeholder="es. Serie A dei poveri"/></div>
     </div>
     <h3 style="margin-top:1rem">🏓 Partita</h3>
+    <div class="form-field"><label>Giocatori — clicca per assegnare alle squadre</label>
+      ${playerPickerHtml(giocatori)}
+    </div>
     <div class="form-row">
       <div class="form-field">
-        <label>Nome Squadra 1</label><input type="text" id="f-sn1" placeholder="es. Los Polipos"/>
-        <label style="margin-top:6px">Giocatori (separati da virgola)</label><input type="text" id="f-s1" placeholder="Fra, Fabio"/>
-        <label style="margin-top:6px">Foto squadra 1</label>
+        <label>Nome Squadra A (opz.)</label><input type="text" id="f-sn1" placeholder="es. Los Polipos"/>
+        <label style="margin-top:6px">Foto squadra A</label>
         <input type="file" id="f-sfoto1" accept="image/*" style="font-size:.82rem;margin-top:2px" onchange="previewTeamFoto(this,'f-sfoto1-preview')"/>
-        <img id="f-sfoto1-preview" src="" style="display:none;margin-top:6px;width:100%;height:70px;object-fit:cover;border-radius:10px"/>
+        <img id="f-sfoto1-preview" src="" style="display:none;margin-top:6px;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px"/>
       </div>
       <div class="form-field">
-        <label>Nome Squadra 2</label><input type="text" id="f-sn2" placeholder="es. I Predatori"/>
-        <label style="margin-top:6px">Giocatori (separati da virgola)</label><input type="text" id="f-s2" placeholder="Ale, Samu"/>
-        <label style="margin-top:6px">Foto squadra 2</label>
+        <label>Nome Squadra B (opz.)</label><input type="text" id="f-sn2" placeholder="es. I Predatori"/>
+        <label style="margin-top:6px">Foto squadra B</label>
         <input type="file" id="f-sfoto2" accept="image/*" style="font-size:.82rem;margin-top:2px" onchange="previewTeamFoto(this,'f-sfoto2-preview')"/>
-        <img id="f-sfoto2-preview" src="" style="display:none;margin-top:6px;width:100%;height:70px;object-fit:cover;border-radius:10px"/>
+        <img id="f-sfoto2-preview" src="" style="display:none;margin-top:6px;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px"/>
       </div>
     </div>
     <div class="form-field"><label>Set (es. 6-3|4-6|6-4)</label><input type="text" id="f-sets" placeholder="6-3|4-6|6-4"/></div>
@@ -2766,8 +2964,6 @@ async function uploadTeamFoto(file) {
 async function saveSerata() {
   const data = document.getElementById('f-data').value;
   const titolo = document.getElementById('f-titolo').value;
-  const s1 = document.getElementById('f-s1').value.trim();
-  const s2 = document.getElementById('f-s2').value.trim();
   const sn1 = document.getElementById('f-sn1').value.trim();
   const sn2 = document.getElementById('f-sn2').value.trim();
   const sets = document.getElementById('f-sets').value.trim();
@@ -2775,9 +2971,16 @@ async function saveSerata() {
   const foto1File = document.getElementById('f-sfoto1').files[0];
   const foto2File = document.getElementById('f-sfoto2').files[0];
 
+  // Raccogli giocatori selezionati dal picker
+  const pickedA = Array.from(document.querySelectorAll('.pp-player.sel-a'));
+  const pickedB = Array.from(document.querySelectorAll('.pp-player.sel-b'));
+  const s1Names = pickedA.map(el => el.dataset.nome).join(', ');
+  const s2Names = pickedB.map(el => el.dataset.nome).join(', ');
+  const s1Ids = JSON.stringify(pickedA.map(el => el.dataset.id));
+  const s2Ids = JSON.stringify(pickedB.map(el => el.dataset.id));
+
   if (!data) { showMsg('save-msg','Inserisci la data.',true); return; }
 
-  // Calcola set vinti
   let ps1=0, ps2=0;
   if (sets) {
     sets.split('|').forEach(st => {
@@ -2790,14 +2993,15 @@ async function saveSerata() {
   if (error) { showMsg('save-msg','Errore nel salvare la serata.',true); return; }
   const serataId = ser[0].id;
 
-  if (s1 && s2) {
+  if (pickedA.length || pickedB.length) {
     const [foto1Url, foto2Url] = await Promise.all([
       uploadTeamFoto(foto1File),
       uploadTeamFoto(foto2File)
     ]);
     await sb.from('partite').insert({
       serata_id: serataId,
-      squadra1_nomi: s1, squadra2_nomi: s2,
+      squadra1_nomi: s1Names, squadra2_nomi: s2Names,
+      squadra1_giocatori_ids: s1Ids, squadra2_giocatori_ids: s2Ids,
       squadra1_nome: sn1 || null, squadra2_nome: sn2 || null,
       squadra1_foto_url: foto1Url, squadra2_foto_url: foto2Url,
       punteggio_s1: String(ps1), punteggio_s2: String(ps2),
@@ -2844,8 +3048,11 @@ async function editSerata(serataId) {
   const el = document.getElementById('admin-section');
   el.innerHTML = '<div class="form-section"><h3>⏳ Caricamento...</h3></div>';
 
-  const { data: s } = await sb.from('serate').select('*').eq('id', serataId).single();
-  const { data: partite } = await sb.from('partite').select('*').eq('serata_id', serataId);
+  const [{ data: s }, { data: partite }, { data: allGioc }] = await Promise.all([
+    sb.from('serate').select('*').eq('id', serataId).single(),
+    sb.from('partite').select('*').eq('serata_id', serataId),
+    sb.from('giocatori').select('*').order('nome')
+  ]);
   const { data: rlist } = await sb.from('ristoranti').select('*').eq('serata_id', serataId);
   const { data: cp } = await sb.from('commenti_partita').select('*, giocatori(nome)').eq('serata_id', serataId).order('created_at');
   const p = partite && partite[0];
@@ -2877,22 +3084,28 @@ async function editSerata(serataId) {
     <!-- PARTITA -->
     <div class="form-section">
       <h3>🏓 Partita</h3>
+      <div class="form-field"><label>Giocatori — clicca per assegnare alle squadre</label>
+        ${(() => {
+          let preA = [], preB = [];
+          try { preA = JSON.parse(p?.squadra1_giocatori_ids || '[]'); } catch(e) {}
+          try { preB = JSON.parse(p?.squadra2_giocatori_ids || '[]'); } catch(e) {}
+          return playerPickerHtml(allGioc || [], preA, preB);
+        })()}
+      </div>
       <div class="form-row">
         <div class="form-field">
-          <label>Nome Squadra 1</label><input type="text" id="ep-sn1" value="${p?.squadra1_nome||''}"/>
-          <label style="margin-top:6px">Giocatori (virgola)</label><input type="text" id="ep-s1" value="${p?.squadra1_nomi||''}"/>
-          <label style="margin-top:6px">Foto squadra 1</label>
-          ${p?.squadra1_foto_url ? `<img src="${p.squadra1_foto_url}" style="width:100%;height:60px;object-fit:cover;border-radius:8px;margin-bottom:4px"/>` : ''}
+          <label>Nome Squadra A (opz.)</label><input type="text" id="ep-sn1" value="${p?.squadra1_nome||''}"/>
+          <label style="margin-top:6px">Foto squadra A</label>
+          ${p?.squadra1_foto_url ? `<img src="${p.squadra1_foto_url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;margin-bottom:4px"/>` : ''}
           <input type="file" id="ep-sfoto1" accept="image/*" style="font-size:.82rem" onchange="previewTeamFoto(this,'ep-sfoto1-prev')"/>
-          <img id="ep-sfoto1-prev" style="display:none;margin-top:4px;width:100%;height:60px;object-fit:cover;border-radius:8px"/>
+          <img id="ep-sfoto1-prev" style="display:none;margin-top:4px;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px"/>
         </div>
         <div class="form-field">
-          <label>Nome Squadra 2</label><input type="text" id="ep-sn2" value="${p?.squadra2_nome||''}"/>
-          <label style="margin-top:6px">Giocatori (virgola)</label><input type="text" id="ep-s2" value="${p?.squadra2_nomi||''}"/>
-          <label style="margin-top:6px">Foto squadra 2</label>
-          ${p?.squadra2_foto_url ? `<img src="${p.squadra2_foto_url}" style="width:100%;height:60px;object-fit:cover;border-radius:8px;margin-bottom:4px"/>` : ''}
+          <label>Nome Squadra B (opz.)</label><input type="text" id="ep-sn2" value="${p?.squadra2_nome||''}"/>
+          <label style="margin-top:6px">Foto squadra B</label>
+          ${p?.squadra2_foto_url ? `<img src="${p.squadra2_foto_url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;margin-bottom:4px"/>` : ''}
           <input type="file" id="ep-sfoto2" accept="image/*" style="font-size:.82rem" onchange="previewTeamFoto(this,'ep-sfoto2-prev')"/>
-          <img id="ep-sfoto2-prev" style="display:none;margin-top:4px;width:100%;height:60px;object-fit:cover;border-radius:8px"/>
+          <img id="ep-sfoto2-prev" style="display:none;margin-top:4px;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px"/>
         </div>
       </div>
       <div class="form-field"><label>Set (es. 6-3|4-6|6-4)</label><input type="text" id="ep-sets" value="${p?.set_dettaglio||''}"/></div>
@@ -2982,13 +3195,19 @@ async function updateSerata(id) {
 }
 
 async function updatePartita(serataId, partitaId) {
-  const s1 = document.getElementById('ep-s1').value.trim();
-  const s2 = document.getElementById('ep-s2').value.trim();
   const sn1 = document.getElementById('ep-sn1').value.trim();
   const sn2 = document.getElementById('ep-sn2').value.trim();
   const sets = document.getElementById('ep-sets').value.trim();
   const foto1File = document.getElementById('ep-sfoto1').files[0];
   const foto2File = document.getElementById('ep-sfoto2').files[0];
+
+  const pickedA = Array.from(document.querySelectorAll('.pp-player.sel-a'));
+  const pickedB = Array.from(document.querySelectorAll('.pp-player.sel-b'));
+  const s1Names = pickedA.map(el => el.dataset.nome).join(', ');
+  const s2Names = pickedB.map(el => el.dataset.nome).join(', ');
+  const s1Ids = JSON.stringify(pickedA.map(el => el.dataset.id));
+  const s2Ids = JSON.stringify(pickedB.map(el => el.dataset.id));
+
   let ps1=0, ps2=0;
   if (sets) sets.split('|').forEach(st => { const [a,b]=st.split('-').map(Number); if(!isNaN(a)&&!isNaN(b)){if(a>b)ps1++;else ps2++;} });
 
@@ -2999,7 +3218,8 @@ async function updatePartita(serataId, partitaId) {
 
   const payload = {
     serata_id: serataId,
-    squadra1_nomi: s1, squadra2_nomi: s2,
+    squadra1_nomi: s1Names, squadra2_nomi: s2Names,
+    squadra1_giocatori_ids: s1Ids, squadra2_giocatori_ids: s2Ids,
     squadra1_nome: sn1 || null, squadra2_nome: sn2 || null,
     punteggio_s1: String(ps1), punteggio_s2: String(ps2),
     set_dettaglio: sets,
