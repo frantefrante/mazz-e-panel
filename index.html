@@ -311,8 +311,9 @@ main{
 .pillola-card:hover{ transform:translateY(-3px); box-shadow:0 14px 36px rgba(0,0,0,.17); }
 .pillola-card-img{
   width:100%;
-  aspect-ratio:16/9;
+  aspect-ratio:4/3;
   object-fit:cover;
+  object-position:center 20%;
   display:block;
 }
 .pillola-card-img-placeholder{
@@ -395,8 +396,9 @@ main{
 }
 .pillola-article-img{
   width:100%;
-  aspect-ratio:16/9;
+  aspect-ratio:4/3;
   object-fit:cover;
+  object-position:center 20%;
   border-radius:16px;
   margin-bottom:28px;
 }
@@ -1530,14 +1532,15 @@ main{
 .giocatore-card:hover{transform:translateY(-3px);}
 .giocatore-foto{
   width:100%;
-  height:200px;
+  aspect-ratio:3/4;
   object-fit:cover;
+  object-position:top center;
   display:block;
   background:var(--verde-pale);
 }
 .giocatore-foto-placeholder{
   width:100%;
-  height:200px;
+  aspect-ratio:3/4;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2635,11 +2638,7 @@ function populateHomeSidebar(nextSerata) {
     <div class="sidebar-card">
       <div class="sidebar-kicker">🎾 Pillole di Padel</div>
       <div class="sidebar-title">Impara, migliora, vinci.</div>
-      ${PILLOLE.slice(0,2).map(art => `
-        <div class="sidebar-pillola" onclick="showView('pillole',document.querySelectorAll('.nav-btn')[3]);setTimeout(()=>loadPillole('${art.id}'),50)">
-          <div class="sidebar-pillola-title">${art.emoji} ${art.titolo}</div>
-          <div class="sidebar-pillola-sub">${art.sottotitolo}</div>
-        </div>`).join('<hr style="border:none;border-top:1px solid var(--paper-line);margin:10px 0"/>')}
+      <div id="pillole-sidebar-list"><div style="font-size:.82rem;color:var(--muted)">Caricamento...</div></div>
       <div class="quick-link" style="cursor:pointer;margin-top:12px" onclick="showView('pillole',document.querySelectorAll('.nav-btn')[3])"><span>📚 Tutte le pillole</span><b>→</b></div>
     </div>
 
@@ -2651,7 +2650,7 @@ function populateHomeSidebar(nextSerata) {
         <div class="quick-link" style="cursor:pointer" onclick="showView('giocatori',document.querySelectorAll('.nav-btn')[2])"><span>👥 Rivedi i protagonisti</span><b>→</b></div>
       </div>
     </div>`;
-  setTimeout(() => loadProtagonistiSidebar(), 50);
+  setTimeout(() => { loadProtagonistiSidebar(); loadPilloleSidebar(); }, 50);
 }
 
 async function loadProtagonistiSidebar() {
@@ -3981,66 +3980,147 @@ function toast(msg) {
 }
 
 /* ——— PILLOLE DI PADEL ——— */
-const PILLOLE = [
-  {
-    id: 'bandeja',
-    tag: 'Tecnica',
-    titolo: 'La Bandeja',
-    sottotitolo: 'Il colpo più elegante del padel — e perché si chiama "vassoio".',
-    emoji: '🍽️',
-    corpo: `
-      <h2>Cos'è la Bandeja</h2>
-      <p>La <strong>bandeja</strong> è un colpo aereo eseguito al volo, solitamente dalla zona di fondo campo, quando la palla arriva alta e non hai spazio o tempo per eseguire una smash classica. È uno dei colpi più raffinati e tecnici del padel, e distingue immediatamente i giocatori esperti dai principianti.</p>
-      <p>A differenza della smash — che cerca la potenza e il punto diretto — la bandeja punta al <strong>controllo, alla profondità e alla continuità</strong>. L'obiettivo non è fare il punto, ma mandare l'avversario in difficoltà e tornare a rete in posizione dominante.</p>
-
-      <h2>Perché si chiama "vassoio"</h2>
-      <p>Il nome viene dallo spagnolo <em>bandeja</em>, che significa letteralmente <strong>vassoio</strong>. Il motivo è visivo: nel momento dell'impatto, la racchetta rimane quasi orizzontale, con il piano di battitura rivolto verso l'alto — esattamente come un cameriere che porta un vassoio con i piatti in equilibrio.</p>
-      <div class="pillola-article-tip">💡 Immagina di dover portare un bicchiere d'acqua sulla racchetta nel momento in cui colpisci la palla. Ecco l'angolo corretto della bandeja.</div>
-      <p>Questo dettaglio è fondamentale: è proprio quell'apertura del piano di battuta che genera l'effetto tagliato caratteristico del colpo, facendo rimbalzare la palla bassa e parallela al vetro laterale dopo il rimbalzo.</p>
-
-      <h2>Come si esegue</h2>
-      <p><strong>1. Posizione di partenza</strong> — Quando vedi che la palla arriverà alta, inizia subito a spostare il peso del corpo lateralmente e porta la racchetta dietro la testa, in posizione di preparazione.</p>
-      <p><strong>2. Impugnatura</strong> — Si usa tipicamente l'impugnatura continentale (o Eastern), che permette di tagliare la palla mantenendo il piano inclinato.</p>
-      <p><strong>3. Il gesto</strong> — Il braccio scende dall'alto verso il basso con un movimento controllato, come se stessi "affettando" la palla. Il polso rimane fermo — nessuna rotazione aggressiva come nella smash.</p>
-      <p><strong>4. Il punto di contatto</strong> — La palla va colpita leggermente davanti e sopra la testa, con la racchetta inclinata a circa 45° rispetto al suolo.</p>
-      <p><strong>5. Effetto e traiettoria</strong> — L'effetto tagliato fa sì che la palla vada profonda, rimbalzi bassa e, idealmente, si incolli al vetro laterale, rendendo il recupero avversario molto difficile.</p>
-      <div class="pillola-article-tip">🏓 <strong>Errore comune:</strong> cercare di fare potenza. La bandeja è un colpo di posizionamento, non di attacco. Chi la esegue bene rinuncia al punto immediato per guadagnare la rete e costruire l'azione successiva.</div>
-
-      <h2>Quando usarla</h2>
-      <p>La bandeja si usa quando sei spinto verso il fondo campo da una palla alta e non hai la possibilità di attaccare con una smash sicura. È il colpo ideale per <strong>uscire dalla situazione difensiva con classe</strong>, tornare a rete e rimettere pressione agli avversari.</p>
-      <p>I giocatori più esperti la usano anche come colpo tattico: invece di rischiare una smash difficile, preferiscono la bandeja per gestire lo scambio e aspettare il momento giusto per chiudere.</p>
-    `
-  }
-];
-
-function loadPillole(articleId) {
+async function loadPillole(articleId) {
   const el = document.getElementById('pillole-content');
+  if (!el) return;
+  el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div></div>';
+
   if (articleId) {
-    const art = PILLOLE.find(p => p.id === articleId);
+    const { data: art } = await sb.from('pillole').select('*').eq('id', articleId).single();
     if (!art) return;
+    const imgHtml = art.immagine_url
+      ? `<img class="pillola-article-img" src="${art.immagine_url}" alt="${art.titolo}"/>`
+      : `<div class="pillola-article-img-placeholder">🎾</div>`;
+    const adminBtns = currentUser?.ruolo === 'admin'
+      ? `<div style="display:flex;gap:8px;margin-bottom:16px">
+           <button class="btn-save" style="font-size:.8rem;padding:.4rem .9rem" onclick="editPillola('${art.id}')">✏️ Modifica</button>
+           <button class="btn-danger" style="font-size:.8rem;padding:.4rem .9rem" onclick="deletePillola('${art.id}')">Elimina</button>
+         </div>` : '';
     el.innerHTML = `
       <div class="pillola-article">
         <button class="pillola-article-back" onclick="loadPillole()">← Tutte le pillole</button>
+        ${adminBtns}
         <div class="pillola-article-tag">${art.tag}</div>
         <div class="pillola-article-title">${art.titolo}</div>
-        <div class="pillola-article-subtitle">${art.sottotitolo}</div>
-        <div class="pillola-article-img-placeholder">${art.emoji}</div>
-        <div class="pillola-article-body">${art.corpo}</div>
+        <div class="pillola-article-subtitle">${art.sottotitolo || ''}</div>
+        ${imgHtml}
+        <div class="pillola-article-body">${art.corpo || ''}</div>
       </div>`;
   } else {
-    el.innerHTML = `
+    const { data: pillole } = await sb.from('pillole').select('*').order('ordine').order('created_at', { ascending: false });
+    const adminBtn = currentUser?.ruolo === 'admin'
+      ? `<div style="margin-bottom:20px"><button class="btn-save" onclick="newPillola()">+ Nuova pillola</button></div>` : '';
+    if (!pillole?.length) {
+      el.innerHTML = adminBtn + '<div class="empty"><div class="empty-icon">🎾</div><div class="empty-title">Nessuna pillola ancora</div></div>';
+      return;
+    }
+    el.innerHTML = adminBtn + `
       <div class="pillole-grid">
-        ${PILLOLE.map(art => `
-          <div class="pillola-card" onclick="loadPillole('${art.id}')">
-            <div class="pillola-card-img-placeholder">${art.emoji}</div>
+        ${pillole.map(art => {
+          const imgHtml = art.immagine_url
+            ? `<img class="pillola-card-img" src="${art.immagine_url}" alt="${art.titolo}"/>`
+            : `<div class="pillola-card-img-placeholder">🎾</div>`;
+          return `<div class="pillola-card" onclick="loadPillole('${art.id}')">
+            ${imgHtml}
             <div class="pillola-card-body">
               <div class="pillola-tag">${art.tag}</div>
               <div class="pillola-card-title">${art.titolo}</div>
-              <div class="pillola-card-sub">${art.sottotitolo}</div>
+              <div class="pillola-card-sub">${art.sottotitolo || ''}</div>
             </div>
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
   }
+}
+
+async function loadPilloleSidebar() {
+  const el = document.getElementById('pillole-sidebar-list');
+  if (!el) return;
+  const { data: pillole } = await sb.from('pillole').select('id,titolo,sottotitolo').order('ordine').order('created_at', { ascending: false }).limit(2);
+  if (!pillole?.length) { el.innerHTML = '<div style="font-size:.82rem;color:var(--muted)">Nessuna pillola ancora.</div>'; return; }
+  el.innerHTML = pillole.map((art, i) => `
+    ${i > 0 ? '<hr style="border:none;border-top:1px solid var(--paper-line);margin:10px 0"/>' : ''}
+    <div class="sidebar-pillola" onclick="showView('pillole',document.querySelectorAll('.nav-btn')[3]);setTimeout(()=>loadPillole('${art.id}'),50)">
+      <div class="sidebar-pillola-title">🎾 ${art.titolo}</div>
+      <div class="sidebar-pillola-sub">${art.sottotitolo || ''}</div>
+    </div>`).join('');
+}
+
+function newPillola() {
+  const el = document.getElementById('pillole-content');
+  el.innerHTML = pilloleForm();
+}
+
+function editPillola(id) {
+  sb.from('pillole').select('*').eq('id', id).single().then(({ data: art }) => {
+    if (!art) return;
+    const el = document.getElementById('pillole-content');
+    el.innerHTML = pilloleForm(art);
+  });
+}
+
+function pilloleForm(art) {
+  return `
+    <div class="pillola-article">
+      <button class="pillola-article-back" onclick="loadPillole()">← Annulla</button>
+      <h3 style="margin-bottom:1rem">${art?.id ? '✏️ Modifica pillola' : '+ Nuova pillola'}</h3>
+      <div class="form-field"><label>Tag (es. Tecnica, Regole, Tattica)</label>
+        <input type="text" id="pill-tag" value="${art?.tag || 'Tecnica'}"/></div>
+      <div class="form-field"><label>Titolo</label>
+        <input type="text" id="pill-titolo" value="${art?.titolo || ''}"/></div>
+      <div class="form-field"><label>Sottotitolo</label>
+        <input type="text" id="pill-sub" value="${art?.sottotitolo || ''}"/></div>
+      <div class="form-field"><label>Immagine (opzionale)</label>
+        <input type="file" id="pill-img" accept="image/*" onchange="previewTeamFoto(this,'pill-img-prev')"/>
+        ${art?.immagine_url ? `<img src="${art.immagine_url}" style="margin-top:8px;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px"/>` : ''}
+        <img id="pill-img-prev" style="display:none;margin-top:8px;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px"/>
+      </div>
+      <div class="form-field"><label>Testo dell'articolo (HTML supportato)</label>
+        <textarea id="pill-corpo" style="min-height:320px;font-family:monospace;font-size:.82rem;line-height:1.5">${art?.corpo || ''}</textarea></div>
+      <div class="form-field"><label>Ordine (numero, 0 = primo)</label>
+        <input type="number" id="pill-ordine" value="${art?.ordine ?? 0}" min="0"/></div>
+      <button class="btn-save" onclick="salvaPillola('${art?.id || ''}')">💾 Salva</button>
+      <div id="pill-msg"></div>
+    </div>`;
+}
+
+async function salvaPillola(id) {
+  const tag = document.getElementById('pill-tag').value.trim();
+  const titolo = document.getElementById('pill-titolo').value.trim();
+  if (!titolo) { toast('Inserisci un titolo.'); return; }
+  const sottotitolo = document.getElementById('pill-sub').value.trim();
+  const corpo = document.getElementById('pill-corpo').value.trim();
+  const ordine = parseInt(document.getElementById('pill-ordine').value) || 0;
+  const imgFile = document.getElementById('pill-img').files[0];
+
+  let immagine_url = undefined;
+  if (imgFile) {
+    const ext = imgFile.name.split('.').pop();
+    const path = `pillole/${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('foto-serate').upload(path, imgFile, { upsert: true });
+    if (!upErr) {
+      const { data } = sb.storage.from('foto-serate').getPublicUrl(path);
+      immagine_url = data.publicUrl;
+    }
+  }
+
+  const payload = { tag, titolo, sottotitolo, corpo, ordine, ...(immagine_url && { immagine_url }) };
+  let error;
+  if (id) {
+    ({ error } = await sb.from('pillole').update(payload).eq('id', id));
+  } else {
+    ({ error } = await sb.from('pillole').insert(payload));
+  }
+  if (error) { toast('Errore: ' + error.message); return; }
+  toast('Pillola salvata! 🎾');
+  loadPillole();
+}
+
+async function deletePillola(id) {
+  if (!confirm('Eliminare questa pillola?')) return;
+  await sb.from('pillole').delete().eq('id', id);
+  toast('Pillola eliminata.');
+  loadPillole();
 }
 
 /* ——— INIT ——— */
