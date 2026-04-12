@@ -2531,13 +2531,16 @@ async function loadProtagonistiSidebar() {
     </div>`;
   });
 
-  // Bottone voto o stato
+  // Bottone voto o modifica
   if (currentUser && !haVotato) {
     html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--paper-line)">
       <button class="btn-save" style="width:100%;padding:.6rem 1rem;font-size:.88rem" onclick="openVoteModal()">✏️ Vota i protagonisti</button>
     </div>`;
   } else if (currentUser && haVotato) {
-    html += `<div style="margin-top:10px;font-size:.82rem;color:var(--verde);font-weight:600">✓ Hai già votato</div>`;
+    html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--paper-line);display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="font-size:.82rem;color:var(--verde);font-weight:600">✓ Hai votato</span>
+      <button class="btn-secondary" style="padding:.4rem .9rem;font-size:.82rem" onclick="openVoteModal()">✏️ Modifica voto</button>
+    </div>`;
   } else {
     html += `<div style="margin-top:10px;font-size:.82rem;color:var(--muted)">Accedi per votare.</div>`;
   }
@@ -2560,27 +2563,27 @@ async function openVoteModal() {
   try { giocatoriIds = JSON.parse(sessione.giocatori_ids || '[]'); } catch(e) {}
   const { data: giocatori } = await sb.from('giocatori').select('*').in('id', giocatoriIds);
   const { data: voti } = await sb.from('protagonisti_voti').select('*').eq('sessione_id', sessione.id).eq('votante_id', currentUser.id);
-  if (voti && voti.length > 0) {
-    body.innerHTML = '<div style="padding:1rem;color:var(--verde);font-weight:600">✓ Hai già votato per questa sessione.</div>';
-    return;
-  }
+  const haVotato = voti && voti.length > 0;
 
   _voteSessionId = sessione.id;
   _voteGiocatoriIds = giocatoriIds;
 
   body.innerHTML = `
+    ${haVotato ? '<p style="font-size:.85rem;color:var(--verde);font-weight:600;margin-bottom:.5rem">✓ Hai già votato — puoi modificare il tuo voto.</p>' : ''}
     <p style="font-size:.85rem;color:var(--gray);margin-bottom:1rem">Dai un voto da 0 a 10 a ciascun giocatore e scegli il tuo MVP.</p>
     ${giocatoriIds.map(gid => {
       const g = (giocatori || []).find(x => x.id === gid);
       if (!g) return '';
+      const votoPrec = haVotato ? (voti.find(v => v.votato_id === gid)?.voto ?? '') : '';
+      const isMvpPrec = haVotato && sessione.mvp_id === gid;
       return `<div class="vote-player-row">
         ${g.foto_url ? `<img class="vote-player-avatar" src="${g.foto_url}" alt="${g.nome}"/>` : `<div class="vote-player-avatar">${g.nome.charAt(0)}</div>`}
         <div style="flex:1;font-weight:700;font-size:.9rem">${g.nome_battaglia || g.nome}</div>
-        <input class="vote-score-input" type="number" min="0" max="10" id="pvoto-${gid}" placeholder="0–10"/>
-        <label class="vote-mvp-label"><input type="radio" name="vote-mvp" value="${gid}" style="accent-color:#2a5c3f"> MVP</label>
+        <input class="vote-score-input" type="number" min="0" max="10" id="pvoto-${gid}" placeholder="0–10" value="${votoPrec}"/>
+        <label class="vote-mvp-label"><input type="radio" name="vote-mvp" value="${gid}" style="accent-color:#2a5c3f" ${isMvpPrec ? 'checked' : ''}> MVP</label>
       </div>`;
     }).join('')}
-    <button class="btn-save" style="width:100%;margin-top:1rem;padding:.7rem 1rem" onclick="salvaVotoProtagonisti()">Salva voto 🏓</button>`;
+    <button class="btn-save" style="width:100%;margin-top:1rem;padding:.7rem 1rem" onclick="salvaVotoProtagonisti()">${haVotato ? '✏️ Aggiorna voto' : 'Salva voto 🏓'}</button>`;
 }
 
 function closeVoteModal(e) {
@@ -2595,13 +2598,13 @@ async function salvaVotoProtagonisti() {
   for (const gid of _voteGiocatoriIds) {
     const val = parseInt(document.getElementById(`pvoto-${gid}`)?.value);
     if (isNaN(val) || val < 0 || val > 10) { toast('Inserisci un voto tra 0 e 10 per ogni giocatore.'); return; }
-    const { error } = await sb.from('protagonisti_voti').insert({
+    const { error } = await sb.from('protagonisti_voti').upsert({
       sessione_id: _voteSessionId,
       votante_id: currentUser.id,
-      giocatore_id: gid,
-      punteggio: val,
+      votato_id: gid,
+      voto: val,
       is_spareggio: false
-    });
+    }, { onConflict: 'sessione_id,votante_id,votato_id' });
     if (error) errore = true;
   }
 
@@ -3136,6 +3139,17 @@ async function saveSerata() {
     });
   }
 
+  // Auto-avvia sessione protagonisti con tutti i giocatori delle squadre
+  const tuttiGiocatori = [...pickedA.map(el => el.dataset.id), ...pickedB.map(el => el.dataset.id)];
+  if (tuttiGiocatori.length) {
+    await sb.from('protagonisti_sessione').update({ is_active: false }).eq('is_active', true);
+    await sb.from('protagonisti_sessione').insert({
+      giocatori_ids: JSON.stringify(tuttiGiocatori),
+      is_active: true,
+      serata_id: serataId
+    });
+  }
+
   showMsg('save-msg','✅ Serata salvata con successo!', false);
   toast('Serata creata! 🎉');
 }
@@ -3342,6 +3356,19 @@ async function updatePartita(serataId, partitaId) {
     ({ error } = await sb.from('partite').update(payload).eq('id', partitaId));
   } else {
     ({ error } = await sb.from('partite').insert(payload));
+  }
+  if (!error) {
+    // Aggiorna sessione protagonisti con i giocatori aggiornati
+    const tuttiGiocatori = [...pickedA.map(el => el.dataset.id), ...pickedB.map(el => el.dataset.id)];
+    if (tuttiGiocatori.length) {
+      const { data: sessEsistente } = await sb.from('protagonisti_sessione').select('id').eq('serata_id', serataId).limit(1);
+      if (sessEsistente && sessEsistente[0]) {
+        await sb.from('protagonisti_sessione').update({ giocatori_ids: JSON.stringify(tuttiGiocatori), is_active: true }).eq('id', sessEsistente[0].id);
+      } else {
+        await sb.from('protagonisti_sessione').update({ is_active: false }).eq('is_active', true);
+        await sb.from('protagonisti_sessione').insert({ giocatori_ids: JSON.stringify(tuttiGiocatori), is_active: true, serata_id: serataId });
+      }
+    }
   }
   showMsg('msg-partita', error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
 }
