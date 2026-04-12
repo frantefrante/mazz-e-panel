@@ -1782,8 +1782,12 @@ main{
   .team-names-row .team-tag:first-child{grid-column:1;}
   .team-names-row .team-tag:last-child{grid-column:2;justify-self:end;}
   .team-names-row div:nth-child(2){display:none;}
-  .team-vs-row{grid-template-columns:1fr 60px 1fr;gap:6px;}
-  .team-foto{aspect-ratio:4/3;}
+  .team-vs-row{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:8px;}
+  .team-vs-row .score-wrap{grid-column:1 / -1;order:-1;text-align:center;}
+  .team-vs-row > div:not(.score-wrap){width:100%;}
+  .team-foto{width:100%;aspect-ratio:4/3;}
+  .team-vs-row.team-players-row{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:8px;}
+  .team-vs-row.team-players-row > div:nth-child(2){display:none;}
   .player-picker{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));}
 }
 
