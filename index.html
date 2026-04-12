@@ -2574,7 +2574,7 @@ async function openVoteModal() {
     ${giocatoriIds.map(gid => {
       const g = (giocatori || []).find(x => x.id === gid);
       if (!g) return '';
-      const votoPrec = haVotato ? (voti.find(v => v.votato_id === gid)?.voto ?? '') : '';
+      const votoPrec = haVotato ? (voti.find(v => v.giocatore_id === gid)?.punteggio ?? '') : '';
       const isMvpPrec = haVotato && sessione.mvp_id === gid;
       return `<div class="vote-player-row">
         ${g.foto_url ? `<img class="vote-player-avatar" src="${g.foto_url}" alt="${g.nome}"/>` : `<div class="vote-player-avatar">${g.nome.charAt(0)}</div>`}
@@ -2601,10 +2601,10 @@ async function salvaVotoProtagonisti() {
     const { error } = await sb.from('protagonisti_voti').upsert({
       sessione_id: _voteSessionId,
       votante_id: currentUser.id,
-      votato_id: gid,
-      voto: val,
+      giocatore_id: gid,
+      punteggio: val,
       is_spareggio: false
-    }, { onConflict: 'sessione_id,votante_id,votato_id' });
+    }, { onConflict: 'sessione_id,votante_id,giocatore_id' });
     if (error) errore = true;
   }
 
