@@ -3141,13 +3141,14 @@ function renderAdminHome() {
 
 function showAdminSection(sec) {
   const el = document.getElementById('admin-section');
-  if (sec === 'nuova-serata') { loadFormNuovaSerata(); return; }
+  if (sec === 'nuova-serata') { loadFormNuovaSerata().then(() => el.scrollIntoView({behavior:'smooth',block:'start'})); return; }
   if (sec === 'giocatori')    el.innerHTML = formGiocatori();
   if (sec === 'profili')      loadAdminProfili();
   if (sec === 'gestione-serate') loadGestioneSerate();
   if (sec === 'commenti') loadModCommenti();
   if (sec === 'prossima-partita') loadProssimaPartita();
   if (sec === 'protagonisti-admin') loadProtagonistiAdmin();
+  setTimeout(() => el.scrollIntoView({behavior:'smooth',block:'start'}), 50);
 }
 
 async function loadFormNuovaSerata() {
