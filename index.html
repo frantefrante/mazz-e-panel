@@ -2339,12 +2339,12 @@ async function loadPartite() {
         <div class="hero-titolo">${titoloHero}</div>
         <div class="hero-teaser">${teaser}</div>
         <div class="hero-banner-stats">
-          <span style="cursor:pointer" onclick="document.getElementById('comments-${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${commentiTop.length} commenti</span>
-          <span style="cursor:pointer" onclick="openGallery('${s.id}')">📷 Foto della serata</span>
+          <span style="cursor:pointer;font-size:.9rem;font-weight:700" onclick="document.getElementById('comments-${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${commentiTop.length} commenti</span>
+          <span style="cursor:pointer;font-size:.9rem;font-weight:700" onclick="openGallery('${s.id}')">📷 Foto della serata</span>
           ${mvpNome ? `<span>👑 MVP: ${mvpNome}</span>` : ''}
         </div>
       </div>
-      <div class="hero-collage photo-collage" id="pc-${s.id}"></div>
+      <div class="${isHero ? 'hero-collage' : ''} photo-collage" id="pc-${s.id}"></div>
     </div>
     <div class="card-body">
       <div class="match-card-inner">
@@ -2425,7 +2425,7 @@ async function loadPartite() {
   }
 
   el.innerHTML = html;
-  serateVisibili.forEach(s => renderGallery(s.id));
+  serateVisibili.forEach(s => renderCollage(s));
   populateHomeSidebar(nextSerata);
 }
 
@@ -3825,6 +3825,20 @@ async function convertToJpeg(file) {
     throw new Error('Conversione HEIC fallita: ' + err.message);
   }
 }
+function renderCollage(serata) {
+  const collage = document.getElementById('pc-' + serata.id);
+  if (!collage) return;
+  let polaroidUrls = [];
+  try { polaroidUrls = JSON.parse(serata.polaroid_urls || '[]'); } catch(e) {}
+  if (!polaroidUrls.length) return;
+  const slots = ['big', 'small-a', 'small-b'];
+  const urls = [...polaroidUrls];
+  while (urls.length < 3) urls.push(polaroidUrls[0]);
+  collage.innerHTML = slots.map((slot, i) =>
+    `<div class="shot ${slot}" onclick="openGallery('${serata.id}')"><img src="${urls[i]}" alt="foto serata" loading="lazy"></div>`
+  ).join('');
+}
+
 async function renderGallery(id) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
@@ -3911,9 +3925,10 @@ function openLbUrl(url, id, idx) {
   document.getElementById('lightbox').classList.add('open');
 }
 
-function openGallery(id) {
+async function openGallery(id) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
+  if (!grid.querySelector('.foto-item')) await renderGallery(id);
   const imgs = Array.from(grid.querySelectorAll('.foto-item img'));
   if (!imgs.length) { toast('Nessuna foto ancora per questa serata.'); return; }
   lbUrls = imgs.map(img => img.src);
@@ -3922,12 +3937,13 @@ function openGallery(id) {
   document.getElementById('lightbox').classList.add('open');
 }
 
-function openLb(id,idx) {
+async function openLb(id,idx) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
+  if (!grid.querySelector('.foto-item')) await renderGallery(id);
   lbUrls = Array.from(grid.querySelectorAll('.foto-item img')).map(img => img.src);
   lbIdx = idx;
-  document.getElementById('lb-img').src = lbUrls[lbIdx];
+  document.getElementById('lb-img').src = lbUrls[lbIdx] || '';
   document.getElementById('lightbox').classList.add('open');
 }
 function lbClose() { document.getElementById('lightbox').classList.remove('open'); }
