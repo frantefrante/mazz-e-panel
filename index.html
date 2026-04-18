@@ -2344,7 +2344,7 @@ async function loadPartite() {
           ${mvpNome ? `<span>👑 MVP: ${mvpNome}</span>` : ''}
         </div>
       </div>
-      <div class="${isHero ? 'hero-collage' : ''} photo-collage" id="pc-${s.id}"></div>
+      <div class="hero-collage photo-collage" id="pc-${s.id}"></div>
     </div>
     <div class="card-body">
       <div class="match-card-inner">
@@ -2425,7 +2425,7 @@ async function loadPartite() {
   }
 
   el.innerHTML = html;
-  serateVisibili.forEach(s => renderCollage(s));
+  serateVisibili.forEach(s => renderGallery(s.id));
   populateHomeSidebar(nextSerata);
 }
 
@@ -3825,21 +3825,6 @@ async function convertToJpeg(file) {
     throw new Error('Conversione HEIC fallita: ' + err.message);
   }
 }
-// Carica solo il collage polaroid — usa URL già salvati nel DB, zero chiamate storage
-function renderCollage(serata) {
-  const collage = document.getElementById('pc-' + serata.id);
-  if (!collage) return;
-  let polaroidUrls = [];
-  try { polaroidUrls = JSON.parse(serata.polaroid_urls || '[]'); } catch(e) {}
-  if (!polaroidUrls.length) return;
-  const slots = ['big', 'small-a', 'small-b'];
-  const urls = [...polaroidUrls];
-  while (urls.length < 3) urls.push(polaroidUrls[0]);
-  collage.innerHTML = slots.map((slot, i) =>
-    `<div class="shot ${slot}" onclick="openGallery('${serata.id}')"><img src="${urls[i]}" alt="foto serata" loading="lazy"></div>`
-  ).join('');
-}
-
 async function renderGallery(id) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
@@ -3854,14 +3839,15 @@ async function renderGallery(id) {
 
   if (collage) {
     const slots = ['big', 'small-a', 'small-b'];
-    const fallback = polaroidUrls[0] || null;
+    const fallback = 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80';
+    // Usa polaroid selezionate, altrimenti le prime 3
     let urls = polaroidUrls.length
       ? [...polaroidUrls]
       : items.slice(0, 3).map(f => sb.storage.from('foto-serate').getPublicUrl(`${id}/${f.name}`).data.publicUrl);
-    while (urls.length < 3 && fallback) urls.push(fallback);
+    while (urls.length < 3) urls.push(fallback);
     collage.innerHTML = slots.map((slot, i) => {
       const clickIdx = Math.min(i, Math.max(0, items.length - 1));
-      return urls[i] ? `<div class="shot ${slot}" onclick="openLb('${id}',${clickIdx})"><img src="${urls[i]}" alt="foto serata" loading="lazy"></div>` : '';
+      return `<div class="shot ${slot}" onclick="openLb('${id}',${clickIdx})"><img src="${urls[i]}" alt="foto serata"></div>`;
     }).join('');
   }
 
@@ -3873,7 +3859,7 @@ async function renderGallery(id) {
       ? `<button class="foto-polaroid-btn ${isPolaroid ? 'active' : ''}" title="${isPolaroid ? 'Rimuovi dalle polaroid' : 'Usa come polaroid'}" onclick="togglePolaroid(event,'${id}','${url}')">📌</button>`
       : '';
     return `<div class="foto-item" onclick="openLbUrl('${url}','${id}',${idx})">
-      <img src="${url}" alt="${f.name}" loading="lazy">
+      <img src="${url}" alt="${f.name}">
       ${isAdmin ? `<button class="foto-del" onclick="delFotoStorage(event,'${id}','${f.name}')">✕</button>` : ''}
       ${polaroidBtn}
     </div>`;
@@ -3925,14 +3911,9 @@ function openLbUrl(url, id, idx) {
   document.getElementById('lightbox').classList.add('open');
 }
 
-async function openGallery(id) {
+function openGallery(id) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
-  // Se la gallery non è ancora stata caricata, caricala ora (lazy)
-  if (!grid.dataset.loaded) {
-    await renderGallery(id);
-    grid.dataset.loaded = '1';
-  }
   const imgs = Array.from(grid.querySelectorAll('.foto-item img'));
   if (!imgs.length) { toast('Nessuna foto ancora per questa serata.'); return; }
   lbUrls = imgs.map(img => img.src);
@@ -3941,16 +3922,12 @@ async function openGallery(id) {
   document.getElementById('lightbox').classList.add('open');
 }
 
-async function openLb(id,idx) {
+function openLb(id,idx) {
   const grid = document.getElementById('fg-'+id);
   if (!grid) return;
-  if (!grid.dataset.loaded) {
-    await renderGallery(id);
-    grid.dataset.loaded = '1';
-  }
   lbUrls = Array.from(grid.querySelectorAll('.foto-item img')).map(img => img.src);
   lbIdx = idx;
-  document.getElementById('lb-img').src = lbUrls[lbIdx] || '';
+  document.getElementById('lb-img').src = lbUrls[lbIdx];
   document.getElementById('lightbox').classList.add('open');
 }
 function lbClose() { document.getElementById('lightbox').classList.remove('open'); }
