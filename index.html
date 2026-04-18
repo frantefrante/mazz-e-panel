@@ -2339,8 +2339,8 @@ async function loadPartite() {
         <div class="hero-titolo">${titoloHero}</div>
         <div class="hero-teaser">${teaser}</div>
         <div class="hero-banner-stats">
-          <span style="cursor:pointer;font-size:.9rem;font-weight:700" onclick="document.getElementById('comments-${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${commentiTop.length} commenti</span>
-          <span style="cursor:pointer;font-size:.9rem;font-weight:700" onclick="openGallery('${s.id}')">📷 Foto della serata</span>
+          <span style="cursor:pointer;font-size:1.1rem;font-weight:700" onclick="document.getElementById('comments-${s.id}')?.scrollIntoView({behavior:'smooth',block:'start'})">💬 ${commentiTop.length} commenti</span>
+          <span style="cursor:pointer;font-size:1.1rem;font-weight:700" onclick="openGallery('${s.id}')">📷 Foto della serata</span>
           ${mvpNome ? `<span>👑 MVP: ${mvpNome}</span>` : ''}
         </div>
       </div>
@@ -2407,6 +2407,7 @@ async function loadPartite() {
     const protHtml = !isHero ? renderProtagonistiInCard(sessSerata, allVotiProt, allGiocatori) : '';
 
     html += `
+      ${currentUser && currentUser.ruolo === 'admin' ? `
       <div class="divider"></div>
       <div class="hero-gallery-wrap" id="gallery-${s.id}">
         <div class="lbl">Foto della serata</div>
@@ -2416,7 +2417,7 @@ async function loadPartite() {
             Aggiungi foto
           </button>
         </div>
-      </div>
+      </div>` : `<div class="foto-grid" id="fg-${s.id}" style="display:none"></div>`}
       ${protHtml}
       </div>
     </div>`;
