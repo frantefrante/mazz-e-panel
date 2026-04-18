@@ -2344,7 +2344,7 @@ async function loadPartite() {
           ${mvpNome ? `<span>👑 MVP: ${mvpNome}</span>` : ''}
         </div>
       </div>
-      <div class="hero-collage photo-collage" id="pc-${s.id}"></div>
+      <div class="${isHero ? 'hero-collage' : ''} photo-collage" id="pc-${s.id}"></div>
     </div>
     <div class="card-body">
       <div class="match-card-inner">
