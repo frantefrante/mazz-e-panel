@@ -3143,7 +3143,7 @@ function renderAdminHome() {
 function showAdminSection(sec) {
   const el = document.getElementById('admin-section');
   if (sec === 'nuova-serata') { loadFormNuovaSerata().then(() => el.scrollIntoView({behavior:'smooth',block:'start'})); return; }
-  if (sec === 'giocatori')    el.innerHTML = formGiocatori();
+  if (sec === 'giocatori')    { loadFormGiocatori(); return; }
   if (sec === 'profili')      loadAdminProfili();
   if (sec === 'gestione-serate') loadGestioneSerate();
   if (sec === 'commenti') loadModCommenti();
@@ -3630,8 +3630,27 @@ async function saveProfilo(id) {
   showMsg('pv-msg-'+id, error ? '❌ Errore: '+error.message : '✅ Salvato!', !!error);
 }
 
-function formGiocatori() {
+async function loadFormGiocatori() {
+  const el = document.getElementById('admin-section');
+  el.innerHTML = '<div style="padding:1rem;color:var(--muted)">Caricamento...</div>';
+  const { data: giocatori } = await sb.from('giocatori').select('id,nome,nome_battaglia,username,ruolo').order('nome');
+  const listaHtml = (giocatori || []).map(g => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--gray-light)">
+      <div>
+        <span style="font-weight:700">${g.nome_battaglia || g.nome}</span>
+        <span style="font-size:0.8rem;color:var(--gray);margin-left:0.5rem">@${g.username}</span>
+        ${g.ruolo === 'admin' ? `<span style="font-size:0.75rem;background:var(--verde);color:#fff;padding:1px 7px;border-radius:20px;margin-left:0.4rem">admin</span>` : ''}
+      </div>
+    </div>`).join('');
+  el.innerHTML = formGiocatori(listaHtml);
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function formGiocatori(listaHtml) {
   return `<div class="form-section">
+    <h3>👥 Giocatori registrati</h3>
+    <div style="margin-bottom:1.5rem">${listaHtml || '<p style="color:var(--gray)">Nessun giocatore.</p>'}</div>
+    <hr style="margin:1.5rem 0;border:none;border-top:1px solid var(--gray-light)"/>
     <h3>👤 Aggiungi giocatore</h3>
     <div class="form-row">
       <div class="form-field"><label>Nome completo</label><input type="text" id="ng-nome" placeholder="es. Fabio Rossi"/></div>
