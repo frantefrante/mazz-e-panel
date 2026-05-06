@@ -3632,12 +3632,72 @@ async function saveProfilo(id) {
 
 function formGiocatori() {
   return `<div class="form-section">
-    <h3>👥 Cambia password giocatore</h3>
+    <h3>👤 Aggiungi giocatore</h3>
+    <div class="form-row">
+      <div class="form-field"><label>Nome completo</label><input type="text" id="ng-nome" placeholder="es. Fabio Rossi"/></div>
+      <div class="form-field"><label>Nome battaglia (opz.)</label><input type="text" id="ng-battaglia" placeholder="es. Il Muro"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Username</label><input type="text" id="ng-user" placeholder="es. fabio"/></div>
+      <div class="form-field"><label>Password</label><input type="password" id="ng-pass" placeholder="password iniziale"/></div>
+    </div>
+    <div class="form-field">
+      <label>Ruolo</label>
+      <select id="ng-ruolo" style="padding:0.5rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif">
+        <option value="giocatore">Giocatore</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn-save" onclick="aggiungiGiocatore()">Aggiungi giocatore</button>
+    <div id="ng-msg"></div>
+
+    <hr style="margin:1.5rem 0;border:none;border-top:1px solid var(--gray-light)"/>
+
+    <h3>🔑 Cambia password giocatore</h3>
     <div class="form-field"><label>Username</label><input type="text" id="g-user" placeholder="es. fabio"/></div>
     <div class="form-field"><label>Nuova password</label><input type="password" id="g-pass" placeholder="nuova password"/></div>
     <button class="btn-save" onclick="changePassword()">Aggiorna password</button>
     <div id="g-msg"></div>
+
+    <hr style="margin:1.5rem 0;border:none;border-top:1px solid var(--gray-light)"/>
+
+    <h3>⚙️ Imposta ruolo</h3>
+    <div class="form-field"><label>Username</label><input type="text" id="r-user" placeholder="es. fabio"/></div>
+    <div class="form-field">
+      <label>Ruolo</label>
+      <select id="r-ruolo" style="padding:0.5rem;border:1.5px solid var(--gray-light);border-radius:8px;font-family:'DM Sans',sans-serif">
+        <option value="giocatore">Giocatore</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn-save" onclick="impostaRuolo()">Aggiorna ruolo</button>
+    <div id="r-msg"></div>
   </div>`;
+}
+
+async function aggiungiGiocatore() {
+  const nome = document.getElementById('ng-nome').value.trim();
+  const battaglia = document.getElementById('ng-battaglia').value.trim();
+  const username = document.getElementById('ng-user').value.trim().toLowerCase();
+  const pass = document.getElementById('ng-pass').value;
+  const ruolo = document.getElementById('ng-ruolo').value;
+  if (!nome || !username || !pass) { showMsg('ng-msg', 'Compila nome, username e password.', true); return; }
+  const { error } = await sb.rpc('crea_giocatore', { p_nome: nome, p_nome_battaglia: battaglia || null, p_username: username, p_password: pass, p_ruolo: ruolo });
+  if (error) { showMsg('ng-msg', 'Errore: ' + error.message, true); return; }
+  showMsg('ng-msg', '✅ Giocatore aggiunto!', false);
+  document.getElementById('ng-nome').value = '';
+  document.getElementById('ng-battaglia').value = '';
+  document.getElementById('ng-user').value = '';
+  document.getElementById('ng-pass').value = '';
+}
+
+async function impostaRuolo() {
+  const username = document.getElementById('r-user').value.trim().toLowerCase();
+  const ruolo = document.getElementById('r-ruolo').value;
+  if (!username) { showMsg('r-msg', 'Inserisci username.', true); return; }
+  const { error } = await sb.from('giocatori').update({ ruolo }).eq('username', username);
+  if (error) { showMsg('r-msg', 'Errore: ' + error.message, true); return; }
+  showMsg('r-msg', '✅ Ruolo aggiornato!', false);
 }
 
 async function changePassword() {
