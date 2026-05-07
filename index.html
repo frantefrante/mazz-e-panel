@@ -2030,6 +2030,16 @@ main{
         <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"/></div>
         <button class="btn-primary" onclick="doLogin()">Entra</button>
         <div class="login-err" id="login-err"></div>
+        <div style="text-align:center;margin-top:1rem">
+          <button type="button" style="background:none;border:none;color:var(--verde);font-size:.85rem;cursor:pointer;text-decoration:underline" onclick="toggleResetForm()">Password dimenticata?</button>
+        </div>
+        <div id="reset-form" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--paper-line)">
+          <p style="font-size:.85rem;color:var(--gray);margin-bottom:.8rem">Inserisci il tuo username e l'email associata al tuo account. Ti invieremo un link per reimpostare la password.</p>
+          <div class="field"><label>Username</label><input type="text" id="reset-user" placeholder="es. fra" autocomplete="username"/></div>
+          <div class="field"><label>Email</label><input type="email" id="reset-email" placeholder="la tua email"/></div>
+          <button class="btn-primary" onclick="richiedireset()">Invia link di reset</button>
+          <div class="login-err" id="reset-err"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2115,6 +2125,7 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const VAPID_PUBLIC = 'BNpENlZ6La6fSb_rgc6Db17h-hT_gsqRi6pU-QY61VX8z1kWnBzPWRWLJ0hZPFkQaVPho-NfxmoHiSRM2rdMyPg';
 const NOTIFY_URL = SUPA_URL + '/functions/v1/send-notification';
 const EMAIL_NOTIFY_URL = SUPA_URL + '/functions/v1/send-email-notification';
+const RESET_URL = SUPA_URL + '/functions/v1/send-reset-password';
 
 
 let currentUser = null;
@@ -2177,6 +2188,50 @@ function doLogout() {
   renderNav();
   showView('partite', document.querySelector('.nav-btn'));
   toast('Arrivederci!');
+}
+
+function toggleResetForm() {
+  const f = document.getElementById('reset-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function richiedireset() {
+  const username = document.getElementById('reset-user').value.trim().toLowerCase();
+  const email = document.getElementById('reset-email').value.trim().toLowerCase();
+  const errEl = document.getElementById('reset-err');
+  errEl.textContent = '';
+  if (!username || !email) { errEl.textContent = 'Inserisci username ed email.'; return; }
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Invio in corso...';
+  try {
+    await fetch(RESET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vZ29pbnluaXBkeHN4b3Nwa29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5MjI4MDUsImV4cCI6MjA1ODQ5ODgwNX0.bql7FpqbsPJFlRYGBSXGPFpFvzuqBpBJGcaYBsJMHTA' },
+      body: JSON.stringify({ username, email }),
+    });
+  } catch(e) {}
+  // Mostriamo sempre messaggio generico per sicurezza
+  errEl.style.color = 'var(--verde)';
+  errEl.textContent = 'Se i dati sono corretti, riceverai un\'email con il link entro pochi minuti.';
+  btn.disabled = false; btn.textContent = 'Invia link di reset';
+}
+
+async function checkResetToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('reset');
+  if (!token) return;
+  // Rimuovi il token dall'URL senza ricaricare
+  window.history.replaceState({}, '', window.location.pathname);
+  // Mostra modal per nuova password
+  const nuova = prompt('Inserisci la tua nuova password:');
+  if (!nuova || nuova.length < 6) { alert('Password troppo corta (minimo 6 caratteri).'); return; }
+  const { data: ok } = await sb.rpc('usa_reset_token', { p_token: token, p_nuova_password: nuova });
+  if (ok) {
+    toast('✅ Password aggiornata! Ora puoi accedere.');
+    showView('login', null);
+  } else {
+    alert('Link non valido o scaduto. Richiedi un nuovo reset.');
+  }
 }
 
 /* ——— LOAD PARTITE ——— */
@@ -4275,6 +4330,7 @@ const saved = localStorage.getItem('mp_user');
 if (saved) { try { currentUser = JSON.parse(saved); } catch(e) {} }
 renderNav();
 loadPartite();
+checkResetToken();
 </script>
 </body>
 </html>
