@@ -4176,6 +4176,14 @@ function pilloleForm(art) {
         <label>Testo dell'articolo (HTML supportato)</label>
         <textarea id="pill-corpo" style="min-height:320px;font-family:monospace;font-size:.82rem;line-height:1.5">${art?.corpo || ''}</textarea>
         <button type="button" class="btn-secondary" style="margin-top:6px;font-size:.82rem" onclick="convertiTestoPillola()">🔄 Converti testo in HTML</button>
+        <div style="margin-top:10px;padding:10px 14px;background:#f7f9f5;border-left:3px solid var(--verde);border-radius:6px;font-size:.78rem;color:var(--gray);line-height:1.7">
+          <strong style="color:var(--ink)">Come funziona la conversione:</strong><br>
+          — Separa i blocchi con una <strong>riga vuota</strong> → diventano paragrafi <code>&lt;p&gt;</code><br>
+          — Righe come <strong>1. Titolo</strong> → diventano titoli <code>&lt;h2&gt;</code><br>
+          — Righe corte senza punto finale → titolo <code>&lt;h2&gt;</code><br>
+          — Righe che iniziano con <strong>* </strong> o <strong>- </strong> → lista <code>&lt;ul&gt;</code><br>
+          — Righe con 💡 🐍 ⚠️ 🎯 ✅ → testo in <strong>grassetto</strong>
+        </div>
       </div>
       <div class="form-field"><label>Ordine (numero, 0 = primo)</label>
         <input type="number" id="pill-ordine" value="${art?.ordine ?? 0}" min="0"/></div>
