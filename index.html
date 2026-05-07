@@ -4172,13 +4172,55 @@ function pilloleForm(art) {
         ${art?.immagine_url ? `<img src="${art.immagine_url}" style="margin-top:8px;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px"/>` : ''}
         <img id="pill-img-prev" style="display:none;margin-top:8px;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px"/>
       </div>
-      <div class="form-field"><label>Testo dell'articolo (HTML supportato)</label>
-        <textarea id="pill-corpo" style="min-height:320px;font-family:monospace;font-size:.82rem;line-height:1.5">${art?.corpo || ''}</textarea></div>
+      <div class="form-field">
+        <label>Testo dell'articolo (HTML supportato)</label>
+        <textarea id="pill-corpo" style="min-height:320px;font-family:monospace;font-size:.82rem;line-height:1.5">${art?.corpo || ''}</textarea>
+        <button type="button" class="btn-secondary" style="margin-top:6px;font-size:.82rem" onclick="convertiTestoPillola()">🔄 Converti testo in HTML</button>
+      </div>
       <div class="form-field"><label>Ordine (numero, 0 = primo)</label>
         <input type="number" id="pill-ordine" value="${art?.ordine ?? 0}" min="0"/></div>
       <button class="btn-save" onclick="salvaPillola('${art?.id || ''}')">💾 Salva</button>
       <div id="pill-msg"></div>
     </div>`;
+}
+
+function convertiTestoPillola() {
+  const ta = document.getElementById('pill-corpo');
+  const testo = ta.value;
+  const blocchi = testo.split(/\n{2,}/);
+  const html = blocchi.map(blocco => {
+    const righe = blocco.trim().split('\n').map(r => r.trim()).filter(Boolean);
+    if (!righe.length) return '';
+
+    // Lista con * o -
+    if (righe.every(r => /^[\*\-]\s/.test(r))) {
+      const items = righe.map(r => `<li>${r.replace(/^[\*\-]\s+/, '')}</li>`).join('\n');
+      return `<ul>\n${items}\n</ul>`;
+    }
+
+    // Titolo numerico: "1. Titolo" o "1. Titolo" su riga singola
+    if (righe.length === 1 && /^\d+\.\s/.test(righe[0])) {
+      return `<h2>${righe[0].replace(/^\d+\.\s+/, '')}</h2>`;
+    }
+
+    // Riga singola tutta maiuscola o breve (< 60 char) → titolo h2
+    if (righe.length === 1 && righe[0].length < 60 && !/[.!?]$/.test(righe[0]) && righe[0] === righe[0] && !righe[0].startsWith('💡') && !righe[0].startsWith('🐍') && !righe[0].startsWith('⚠️')) {
+      // potrebbe essere un titolo se è corto e non finisce con punteggiatura
+      // ma solo se ha almeno 3 parole o inizia con maiuscola e sembra un titolo
+      if (/^[A-ZÀ-Ö\d"«]/.test(righe[0]) && righe[0].split(' ').length <= 8) {
+        return `<h2>${righe[0]}</h2>`;
+      }
+    }
+
+    // Righe con emoji di avviso → strong
+    return righe.map(r => {
+      if (/^(💡|🐍|⚠️|🎯|✅)/.test(r)) return `<p><strong>${r}</strong></p>`;
+      return `<p>${r}</p>`;
+    }).join('\n');
+  }).filter(Boolean).join('\n\n');
+
+  ta.value = html;
+  toast('Testo convertito in HTML ✅');
 }
 
 async function salvaPillola(id) {
